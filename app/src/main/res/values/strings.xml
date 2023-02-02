@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">TourismApp</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="date">date</string>
+    <string name="take_photo_button">take_photo_button</string>
+    <string name="imagepreview">imagePreview</string>
+    <string name="photo_image">photo_image</string>
+    <string name="MAPS_API_KEY">AIzaSyDu9rXDF9cchu4dnfswqZqHX3SCb5A4YO0</string>
+    <string name="object_info">object_info</string>
+    <string name="title_text">title_text</string>
+    <string name="object_additional_info">object_additional_info</string>
+    <string name="channel_name">My notification channel</string>
+    <string name="channel_description">This is my notification description</string>
+    <string name="login">LOGIN</string>
+    <string name="email">email</string>
+    <string name="password">password</string>
+    <string name="don_t_have_an_account">Don`t have an account?</string>
+    <string name="create">Create</string>
+    <string name="user_name">name</string>
+    <string name="create_account">create account</string>
+    <string name="go_to_login">Login</string>
+    <string name="welcome_message">welcome_message</string>
+</resources>

@@ -1,0 +1,48 @@
+package com.example.permissionsapp.data.di
+
+import android.app.Application
+import androidx.room.Room
+import com.example.permissionsapp.data.local.MyDataBase
+import com.example.permissionsapp.data.remote.PlacesApi
+import com.example.permissionsapp.presentation.utility.DefaultLocationClient
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.components.ViewModelComponent
+import dagger.hilt.android.scopes.ViewModelScoped
+import retrofit2.Retrofit
+import retrofit2.converter.moshi.MoshiConverterFactory
+
+@Module
+@InstallIn(ViewModelComponent::class)
+object AppModule {
+
+    @Provides
+    @ViewModelScoped
+    fun providePhotoDatabase(app: Application): MyDataBase {
+        return Room.databaseBuilder(
+            app.applicationContext,
+            MyDataBase::class.java,
+            "db"
+        ).build()
+    }
+
+    @Provides
+    @ViewModelScoped
+    fun providePhotoDao(dataBase: MyDataBase) = dataBase.dao
+
+    @Provides
+    @ViewModelScoped
+    fun provideObjectDao(dataBase: MyDataBase) = dataBase.objectDao
+
+    @Provides
+    @ViewModelScoped
+    fun providePlacesApi(): PlacesApi {
+        return Retrofit.Builder()
+            .baseUrl(PlacesApi.BASE_URl)
+            .addConverterFactory(MoshiConverterFactory.create())
+            .build()
+            .create(PlacesApi::class.java)
+    }
+
+}

@@ -1,0 +1,69 @@
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/fragment_photo"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.example.permissionsapp.ui.main.photos.PhotoFragment">
+
+    <androidx.camera.view.PreviewView
+        android:id="@+id/viewFinder"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constraintBottom_toTopOf="@id/takePhotoButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/previewImage"
+        android:layout_width="90dp"
+        android:layout_height="90dp"
+        android:layout_marginBottom="25dp"
+        android:contentDescription="@string/imagepreview"
+        app:layout_constraintBottom_toTopOf="@id/gallery"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/takePhotoButton"
+        tools:src="@tools:sample/avatars" />
+
+
+    <ImageButton
+        android:id="@+id/gallery"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/my_custom_button_gallery"
+        android:contentDescription="@string/imagepreview"
+        android:src="@drawable/gallery_icon"
+        app:layout_constraintBottom_toBottomOf="@id/takePhotoButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/takePhotoButton"
+        app:layout_constraintTop_toTopOf="@+id/takePhotoButton" />
+
+    <androidx.appcompat.widget.AppCompatImageButton
+        android:id="@+id/rotate_camera"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/my_custom_button_gallery"
+        android:contentDescription="@string/imagepreview"
+        android:src="@drawable/camera_switch_icon"
+        app:layout_constraintBottom_toBottomOf="@id/takePhotoButton"
+        app:layout_constraintEnd_toStartOf="@+id/takePhotoButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/takePhotoButton"
+
+        />
+
+
+    <ImageButton
+        android:id="@+id/takePhotoButton"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_marginBottom="30dp"
+        android:background="@drawable/my_custom_button"
+        android:contentDescription="@string/take_photo_button"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

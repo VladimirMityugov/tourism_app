@@ -21,4 +21,21 @@
     <string name="create_account">create account</string>
     <string name="go_to_login">Login</string>
     <string name="welcome_message">welcome_message</string>
+    <string name="choose_search_radius">Choose search radius</string>
+    <string name="reset_radius">Reset radius</string>
+    <string name="search_settings">Search settings</string>
+    <string name="choose_places_to_search">Choose places to search</string>
+    <string name="interesting_places">Interesting places</string>
+    <string name="food">Food</string>
+    <string name="shops">Shops</string>
+    <string name="transport_service">Transport service</string>
+    <string name="banks">Banks</string>
+    <string name="clear_all">Clear all</string>
+    <string name="rating_1">1</string>
+    <string name="rating_2">2</string>
+    <string name="rating_3">3</string>
+    <string name="rating_1_h">1H</string>
+    <string name="rating_2_h">2H</string>
+    <string name="rating_3_h">3H</string>
+    <string name="choose_places_rating">Choose places rating</string>
 </resources>

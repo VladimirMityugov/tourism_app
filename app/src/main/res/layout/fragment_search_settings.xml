@@ -1,0 +1,364 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/fragment_search_settings"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    tools:context="com.example.permissionsapp.ui.main.maps.SearchSettingsFragment">
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardView"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        app:cardCornerRadius="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0">
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/settings_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginStart="70dp"
+            android:layout_marginEnd="70dp"
+            android:elevation="2dp"
+            android:text="@string/search_settings"
+            android:textAlignment="center"
+            android:textAppearance="@style/customTextStyle" />
+
+        <androidx.appcompat.widget.AppCompatImageButton
+            android:id="@+id/back_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start|center"
+            android:layout_marginStart="26dp"
+            android:background="@color/transparent"
+            android:src="@drawable/down_arrow" />
+
+    </com.google.android.material.card.MaterialCardView>
+
+
+    <LinearLayout
+        android:id="@+id/linear_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cardView"
+        app:layout_constraintVertical_bias="0">
+
+        <LinearLayout
+            android:id="@+id/kinds_block"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:background="@drawable/border"
+            android:orientation="vertical"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/kinds_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="26dp"
+                    android:text="@string/choose_places_to_search"
+                    android:textAppearance="@style/customTextStyle" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/clear_kinds"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="26dp"
+                    android:text="@string/clear_all"
+                    android:textAppearance="@style/customTextStyleSmall" />
+
+            </RelativeLayout>
+
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="26dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="26dp">
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/interesting_places_checkbox"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:button="@drawable/checkbox_background" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_toEndOf="@id/interesting_places_checkbox"
+                    android:text="@string/interesting_places"
+                    android:textAppearance="@style/customTextStyleSmall" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="26dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="26dp">
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/food_checkbox"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:button="@drawable/checkbox_background" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_toEndOf="@id/food_checkbox"
+                    android:text="@string/food"
+                    android:textAppearance="@style/customTextStyleSmall" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="26dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="26dp">
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/shops_checkbox"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:button="@drawable/checkbox_background" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_toEndOf="@id/shops_checkbox"
+                    android:text="@string/shops"
+                    android:textAppearance="@style/customTextStyleSmall" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="26dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="26dp">
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/banks_checkbox"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:button="@drawable/checkbox_background" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_toEndOf="@id/banks_checkbox"
+                    android:text="@string/banks"
+                    android:textAppearance="@style/customTextStyleSmall" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="26dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="26dp">
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/transport_checkbox"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:button="@drawable/checkbox_background" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_toEndOf="@id/transport_checkbox"
+                    android:text="@string/transport_service"
+                    android:textAppearance="@style/customTextStyleSmall" />
+
+            </RelativeLayout>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/rating_block"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/border"
+            android:orientation="vertical"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/rating_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="26dp"
+                    android:text="@string/choose_places_rating"
+                    android:textAppearance="@style/customTextStyle" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/clear_rating"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="26dp"
+                    android:text="@string/clear_all"
+                    android:textAppearance="@style/customTextStyleSmall" />
+
+            </RelativeLayout>
+
+            <RadioGroup
+                android:id="@+id/rating_radio_group"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="26dp">
+
+                <RadioButton
+                    android:id="@+id/rating_1"
+                    style="@style/customRadioButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="20dp"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/rating_1" />
+
+                <RadioButton
+                    android:id="@+id/rating_2"
+                    style="@style/customRadioButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="20dp"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/rating_2" />
+
+                <RadioButton
+                    android:id="@+id/rating_3"
+                    style="@style/customRadioButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="20dp"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/rating_3" />
+
+                <RadioButton
+                    android:id="@+id/rating_1_h"
+                    style="@style/customRadioButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="20dp"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/rating_1_h" />
+
+                <RadioButton
+                    android:id="@+id/rating_2_h"
+                    style="@style/customRadioButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="20dp"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/rating_2_h" />
+
+                <RadioButton
+                    android:id="@+id/rating_3_h"
+                    style="@style/customRadioButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="20dp"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/rating_3_h" />
+
+            </RadioGroup>
+
+        </LinearLayout>
+
+        <RelativeLayout
+            android:id="@+id/radius_block"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/border">
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/radius_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:layout_marginStart="26dp"
+                android:layout_marginTop="16dp"
+                android:text="@string/choose_search_radius"
+                android:textAppearance="@style/customTextStyle" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/any_radius"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentEnd="true"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="26dp"
+                android:text="@string/reset_radius"
+                android:textAppearance="@style/customTextStyleSmall" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slider"
+                style="@style/CustomSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/radius_text"
+                android:layout_marginStart="26dp"
+                android:layout_marginTop="24dp"
+                android:layout_marginEnd="26dp"
+                android:value="5" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/min_slider_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/slider"
+                android:layout_alignParentStart="true"
+                android:layout_marginStart="40dp"
+                android:text="1"
+                android:textAppearance="@style/customTextStyle"
+                android:textSize="16sp" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/max_slider_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/slider"
+                android:layout_alignParentEnd="true"
+                android:layout_marginEnd="36dp"
+                android:layout_marginBottom="16dp"
+                android:text="10"
+                android:textAppearance="@style/customTextStyle"
+                android:textSize="16sp" />
+        </RelativeLayout>
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

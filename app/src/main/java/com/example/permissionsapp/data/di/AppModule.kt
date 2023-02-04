@@ -1,10 +1,13 @@
 package com.example.permissionsapp.data.di
 
 import android.app.Application
+import android.content.Context
 import androidx.room.Room
 import com.example.permissionsapp.data.local.MyDataBase
 import com.example.permissionsapp.data.remote.PlacesApi
 import com.example.permissionsapp.presentation.utility.DefaultLocationClient
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -34,6 +37,15 @@ object AppModule {
     @Provides
     @ViewModelScoped
     fun provideObjectDao(dataBase: MyDataBase) = dataBase.objectDao
+
+    @Provides
+    @ViewModelScoped
+    fun provideDefaultLocationClient(app: Application): DefaultLocationClient {
+        return DefaultLocationClient(
+            app.applicationContext,
+            LocationServices.getFusedLocationProviderClient(app.applicationContext)
+        )
+    }
 
     @Provides
     @ViewModelScoped

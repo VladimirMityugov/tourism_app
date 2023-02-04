@@ -1,4 +1,4 @@
-package com.example.permissionsapp.ui.main
+package com.example.permissionsapp.ui.main.maps
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -10,7 +10,6 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Build
 import android.os.Bundle
-import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -18,7 +17,9 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.appcompat.widget.AppCompatImageButton
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
@@ -27,14 +28,14 @@ import com.example.permissionsapp.presentation.MyViewModel
 import com.example.permissionsapp.presentation.utility.DefaultLocationClient
 import com.example.tourismApp.R
 import com.example.tourismApp.databinding.FragmentMapsBinding
-import com.google.android.gms.location.*
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.*
-import com.google.android.gms.maps.GoogleMap.InfoWindowAdapter
 import com.google.android.gms.maps.model.*
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
-
 
 private const val TAG = "MAP_FRAGMENT"
 
@@ -63,6 +64,7 @@ class MapsFragment : Fragment() {
     private lateinit var cameraUpdate: CameraUpdate
     private lateinit var fusedClient: FusedLocationProviderClient
     private lateinit var userPositionMarker: Marker
+    private lateinit var searchSettingsButton: AppCompatImageButton
     private var needAnimateCamera = true
     private var info: ObjectInfo? = null
     private val markers = mutableMapOf<String, String>()
@@ -151,12 +153,12 @@ class MapsFragment : Fragment() {
         setMapSettings()
         setLocationSource()
 
-        map!!.setOnCameraMoveListener{
-            viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-                val location = DefaultLocationClient(requireContext(),fusedClient).getLocationUpdates(5000)
-                Log.d(TAG, "Location is : $location ")
-            }
-        }
+//        map!!.setOnCameraMoveListener{
+//            viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+//                val location = DefaultLocationClient(requireContext(), fusedClient).getLocationUpdates(5000)
+//                Log.d(TAG, "Location is : $location ")
+//            }
+//        }
 
         map!!.setOnMarkerClickListener { marker ->
             val xid = markers[marker.id]
@@ -182,7 +184,6 @@ class MapsFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d(TAG, "on create")
         fusedClient = LocationServices.getFusedLocationProviderClient(requireContext())
         checkPermissions()
     }
@@ -192,7 +193,6 @@ class MapsFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        Log.d(TAG, "on create view")
         _binding = FragmentMapsBinding.inflate(layoutInflater)
         return binding.root
     }
@@ -203,20 +203,63 @@ class MapsFragment : Fragment() {
         val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
         mapFragment?.getMapAsync(onMapReadyCallback)
 
-//        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-//            viewModel.currentLatitude.collectLatest { latitude ->
-//                viewModel.currentLongitude.collectLatest { longitude ->
-//                    if (latitude != null && longitude != null) {
-//                        Log.d(TAG, "Places are requested")
-//                        viewModel.getMuseumsAround(longitude, latitude)
-//                    }
-//                }
-//            }
-//        }
+        searchSettingsButton = binding.searchSettingsButton
+
+        searchSettingsButton.setOnClickListener {
+            onSearchSettingsClick()
+        }
 
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            DefaultLocationClient(requireContext(), fusedClient).getLocationUpdates(5000).collectLatest {
-                Log.d(TAG, "Location : ${it.latitude}, ${it.longitude}")
+            viewModel.getCurrentLocation(5000).collectLatest { location ->
+
+                val latLng = LatLng(location.latitude, location.longitude)
+
+                userPositionMarker = map?.addMarker(
+                    MarkerOptions()
+                        .position(latLng)
+                        .icon(
+                            bitmapDescriptorFromVector(
+                                requireContext(),
+                                R.drawable.marker_google_maps
+                            )
+                        )
+                        .title("Its my location")
+                )!!
+
+                cameraUpdate = CameraUpdateFactory.newLatLngZoom(
+                    latLng, 15f
+                )
+
+
+                if (needAnimateCamera) {
+                    map?.moveCamera(cameraUpdate)
+                    needAnimateCamera = false
+                }
+                viewModel.getPlacesAround(location.longitude, location.latitude, null)
+                viewModel.places.collectLatest { places ->
+                    places?.features?.forEach { feature ->
+                        val placesCoordinates = LatLng(
+                            feature.geometry.coordinates[1],
+                            feature.geometry.coordinates[0]
+                        )
+                        val xid = feature.properties.xid
+                        val marker = map?.addMarker(
+                            MarkerOptions()
+                                .position(placesCoordinates)
+                                .icon(
+                                    bitmapDescriptorFromVector(
+                                        requireContext(),
+                                        R.drawable.marker_android
+                                    )
+                                )
+                                .title(feature.properties.name)
+                                .snippet("Latitude: ${feature.geometry.coordinates[1]}\nLongitude: ${feature.geometry.coordinates[0]}")
+                        )?.id
+                        if (marker != null) {
+                            markers[marker] = xid
+                        }
+                    }
+                }
             }
         }
 
@@ -272,8 +315,8 @@ class MapsFragment : Fragment() {
 //        )
 //    }
 
-    private fun getInfoWindowAdapter(): InfoWindowAdapter {
-        return object : InfoWindowAdapter {
+    private fun getInfoWindowAdapter(): GoogleMap.InfoWindowAdapter {
+        return object : GoogleMap.InfoWindowAdapter {
 
             @SuppressLint("InflateParams")
             var myInfoWindowView: View =
@@ -420,6 +463,14 @@ class MapsFragment : Fragment() {
             draw(Canvas(bitmap))
             BitmapDescriptorFactory.fromBitmap(bitmap)
         }
+    }
+
+    private fun onSearchSettingsClick() {
+        val popupWindow = SearchSettingsFragment()
+        popupWindow.setStyle(DialogFragment.STYLE_NORMAL, R.style.BottomSheetDialogTheme)
+        popupWindow.enterTransition = com.google.android.material.R.id.animateToStart
+        popupWindow.exitTransition = com.google.android.material.R.id.animateToEnd
+        popupWindow.show(requireActivity().supportFragmentManager, "POP_UP")
     }
 
     override fun onDestroyView() {

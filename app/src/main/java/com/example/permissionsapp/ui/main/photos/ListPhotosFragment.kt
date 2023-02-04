@@ -16,6 +16,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.widget.AppCompatButton
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
@@ -23,11 +24,12 @@ import com.example.permissionsapp.data.local.entities.PhotoData
 import com.example.permissionsapp.presentation.MyAdapter
 import com.example.permissionsapp.presentation.MyViewModel
 import com.example.permissionsapp.ui.main.LoginActivity
-import com.example.permissionsapp.ui.main.MapsFragment
+import com.example.permissionsapp.ui.main.maps.MapsFragment
 import com.example.tourismApp.R
 import com.example.tourismApp.databinding.FragmentListPhotosBinding
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -97,7 +99,22 @@ class ListPhotosFragment : Fragment() {
             requireActivity().finish()
         }
 
-        username.text = firebaseAuth.currentUser?.displayName.toString()
+
+        if (firebaseAuth.currentUser?.displayName == null) {
+            viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+                viewModel.currentUserName.collectLatest { currentName ->
+                    Log.d(TAG, "Name is $currentName")
+                    if(currentName != null){
+                        username.isVisible = true
+                        username.text = currentName
+                    }
+                    username.isVisible = false
+                }
+            }
+        } else {
+            username.text = firebaseAuth.currentUser?.displayName.toString()
+        }
+
 
         mapIcon.setOnClickListener {
             requireActivity().supportFragmentManager.beginTransaction()

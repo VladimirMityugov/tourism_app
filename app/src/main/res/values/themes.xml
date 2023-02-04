@@ -14,5 +14,45 @@
         <!-- Customize your theme here. -->
     </style>
 
-    <style name="MyTheme" parent="Theme.MaterialComponents.NoActionBar"/>
+    <style name="MyTheme" parent="Theme.MaterialComponents.NoActionBar" />
+
+    <style name="CustomSlider" parent="Widget.Material3.Slider">
+        <item name="trackColorActive">@color/myBlack</item>
+        <item name="trackColorInactive">@color/myLightGrey</item>
+        <item name="thumbColor">@color/myLightGrey</item>
+        <item name="thumbStrokeWidth">1dp</item>
+        <item name="thumbStrokeColor">@color/black</item>
+        <item name="thumbRadius">12dp</item>
+        <item name="android:stepSize">0.5</item>
+        <item name="android:valueType">floatType</item>
+        <item name="android:valueFrom">1.0</item>
+        <item name="android:valueTo">10.0</item>
+        <item name="tickVisible">false</item>
+        <item name="labelBehavior">floating</item>
+        <item name="labelStyle">@style/MyTooltip</item>
+    </style>
+
+    <style name="MyTooltip" parent="Widget.MaterialComponents.Tooltip">
+        <item name="backgroundTint">@color/myOrange</item>
+        <item name="android:textAppearance">@style/customTextStyle</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
+
+    <style name="BottomSheetDialogTheme" parent="Theme.Design.BottomSheetDialog">
+        <item name="dialogCornerRadius">16dp</item>
+        <item name="bottomSheetStyle">@style/BottomSheetStyle</item>
+    </style>
+
+    <style name="BottomSheetStyle" parent="Widget.Design.BottomSheet.Modal">
+        <item name="android:background">@drawable/bottom_sheet_dialog_background</item>
+    </style>
+
+    <style name="customRadioButton" parent="Widget.AppCompat.CompoundButton.RadioButton">
+        <item name="android:button">@drawable/checkbox_background</item>
+        <item name="android:textColor">@color/myOrange</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:paddingLeft">16dp</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
 </resources>

@@ -7,15 +7,20 @@ import retrofit2.http.*
 
 interface PlacesApi {
 
-    @GET("ru/places/radius?radius=10000&kinds=museums")
-    suspend fun getMuseumsAround(
+    @GET("{lang}/places/radius?")
+    suspend fun getPlacesAround(
+        @Path("lang")language: String,
+        @Query("radius")radius:Int,
         @Query("apikey") apikey: String = KEY,
         @Query("lon") longitude: Double,
-        @Query("lat") latitude: Double
+        @Query("lat") latitude: Double,
+        @Query("kinds")kinds:List<String>?,
+        @Query("rate")rating:String?,
+        @Query("name")placeName: String?
     ): Places
 
     @GET("ru/places/xid/{xid}?")
-    suspend fun getMuseumsInfo(
+    suspend fun getPlaceInfo(
         @Path("xid") xid: String,
         @Query ("apikey") apikey: String = KEY
     ): PlaceInfo

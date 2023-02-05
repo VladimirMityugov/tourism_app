@@ -6,11 +6,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.permissionsapp.data.local.entities.ObjectInfo
 import com.example.permissionsapp.data.local.entities.PhotoData
+import com.example.permissionsapp.data.local.entities.PlacesForSearch
 import com.example.permissionsapp.data.remote.places_dto.Places
 import com.example.permissionsapp.domain.UseCaseLocal
 import com.example.permissionsapp.domain.UseCaseRemote
 import com.example.permissionsapp.presentation.utility.DefaultLocationClient
-import com.example.permissionsapp.presentation.utility.PlacesRating
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -32,12 +32,6 @@ class MyViewModel @Inject constructor(
 
     private val _places = MutableStateFlow<Places?>(null)
     val places = _places.asStateFlow()
-
-    private val _currentLatitude = MutableStateFlow<Double?>(null)
-    val currentLatitude = _currentLatitude.asStateFlow()
-
-    private val _currentLongitude = MutableStateFlow<Double?>(null)
-    val currentLongitude = _currentLongitude.asStateFlow()
 
     private val _museumInfo = MutableStateFlow<ObjectInfo?>(null)
     val museumInfo = _museumInfo.asStateFlow()
@@ -63,12 +57,16 @@ class MyViewModel @Inject constructor(
     private val _currentUserName = MutableStateFlow<String?>(null)
     val currentUserName = _currentUserName.asStateFlow()
 
-    private val _placesRating = MutableStateFlow<PlacesRating?>(null)
-
     private val _radius = MutableStateFlow(5000)
     val radius = _radius.asStateFlow()
 
     private val _kinds = MutableStateFlow<List<String>>(emptyList())
+
+    private val _addedToPlacesKinds = MutableStateFlow(emptyMap<String, Boolean>())
+    val addedToPlacesKinds = _addedToPlacesKinds.asStateFlow()
+
+    private val _hideAllPlaces = MutableStateFlow(true)
+    val hideAllPlaces = _hideAllPlaces.asStateFlow()
 
     fun selectItem(item: PhotoData) {
         _selectedItem.value = item
@@ -101,42 +99,109 @@ class MyViewModel @Inject constructor(
         }
     }
 
-    fun getCurrentLocation(interval: Long):Flow<Location> = locationClient.getLocationUpdates(interval)
+    fun getPlacesKinds(): Flow<List<PlacesForSearch>> = useCaseLocal.getPlacesKindsFromDb()
 
-
-    fun updateCoordinates(latitude: Double, longitude: Double) {
+    private fun insertPlacesKindsToDb(placeKind: String) {
         viewModelScope.launch {
-            _currentLatitude.value = latitude
-            _currentLongitude.value = longitude
+            useCaseLocal.insertPlacesKindsToDb(
+                placesForSearch = PlacesForSearch(
+                    kind = placeKind
+                )
+            )
+            Log.d(TAG, "Place $placeKind has been added to DB")
         }
     }
 
-    fun setRadius(value:Int){
-        _radius.value = value*1000
+    private fun deletePlaceKindFromDb(placeKind: String) {
+        viewModelScope.launch {
+            useCaseLocal.deletePlaceKindFromDb(placeKind = placeKind)
+            Log.d(TAG, "Place $placeKind has been deleted from DB")
+        }
+    }
+
+    fun deleteAllPlacesKinds() {
+        viewModelScope.launch {
+            useCaseLocal.deleteAllPlacesKinds()
+        }
+    }
+
+    fun updatePlacesKindsList(placesKindsList: List<String>) {
+        viewModelScope.launch {
+            _kinds.value = emptyList()
+            _kinds.value = placesKindsList
+            Log.d(TAG, "Updated list is ${_kinds.value}")
+        }
+    }
+
+    fun checkPlacesKinds(
+        placesKindsList: List<String>
+    ) {
+        viewModelScope.launch {
+            val places = listOf(
+                INTERESTING_PLACES,
+                FOOD,
+                BANKS,
+                SHOPS,
+                TRANSPORT
+            )
+            _addedToPlacesKinds.value = emptyMap()
+            val initialStatus = _addedToPlacesKinds.value.entries
+            val status = mutableMapOf<String, Boolean>()
+            initialStatus.forEach { status[it.key] = it.value }
+            places.forEach { kind ->
+                status[kind] = !placesKindsList.all { it != kind }
+            }
+            _addedToPlacesKinds.value = status
+            Log.d(TAG, "Updated list: ${_addedToPlacesKinds.value}")
+        }
+    }
+
+    fun onPlacesKindsClick(placeKind: String) {
+        viewModelScope.launch {
+            if (_addedToPlacesKinds.value[placeKind] == false) {
+                val initialStatus = _addedToPlacesKinds.value.entries
+                val status = mutableMapOf<String, Boolean>()
+                initialStatus.forEach { status[it.key] = it.value }
+                status[placeKind] = true
+                _addedToPlacesKinds.value = status
+                insertPlacesKindsToDb(placeKind)
+            } else {
+                val initialStatus = _addedToPlacesKinds.value.entries
+                val status = mutableMapOf<String, Boolean>()
+                initialStatus.forEach { status[it.key] = it.value }
+                status[placeKind] = false
+                _addedToPlacesKinds.value = status
+                deletePlaceKindFromDb(placeKind)
+            }
+        }
+    }
+
+    fun getCurrentLocation(interval: Long): Flow<Location> =
+        locationClient.getLocationUpdates(interval)
+
+    fun setRadius(value: Int) {
+        _radius.value = value * 1000
     }
 
     fun getPlacesAround(
         longitude: Double,
         latitude: Double,
+        kinds:List<String>?,
         placeName: String?
     ) {
         viewModelScope.launch {
             kotlin.runCatching {
+                Log.d(
+                    TAG,
+                    "Language: ${getLanguage()}, radius: ${_radius.value}, Longitude: $longitude, latitude: $latitude," +
+                            "kinds: ${_kinds.value}"
+                )
                 useCaseRemote.getPlacesAround(
                     language = getLanguage(),
                     radius = _radius.value,
                     longitude = longitude,
                     latitude = latitude,
-                    kinds = _kinds.value,
-                    rating = when (_placesRating.value) {
-                        PlacesRating.LOW -> LOW
-                        PlacesRating.HIGH -> HIGH
-                        PlacesRating.HIGH_H -> HIGH_H
-                        PlacesRating.LOW_H -> LOW_H
-                        PlacesRating.MEDIUM -> MEDIUM
-                        PlacesRating.MEDIUM_H -> MEDIUM_H
-                        else -> null
-                    },
+                    kinds = kinds,
                     placeName = placeName
                 )
             }.fold(
@@ -152,9 +217,6 @@ class MyViewModel @Inject constructor(
         }
     }
 
-    fun setRating(placesRating: PlacesRating){
-        _placesRating.value = placesRating
-    }
 
     private fun getLanguage(): String {
         return if (Locale.getDefault() == Locale("ru", "RU")) RU
@@ -226,6 +288,13 @@ class MyViewModel @Inject constructor(
         }
     }
 
+    fun hideAllPlaces(status: Boolean){
+        viewModelScope.launch {
+            _hideAllPlaces.value = status
+            Log.d(TAG, "HIDE ALL PLACES is ${_hideAllPlaces.value}")
+        }
+    }
+
     private val allObjects = useCaseLocal.getObjectInfo()
         .stateIn(
             viewModelScope,
@@ -255,12 +324,11 @@ class MyViewModel @Inject constructor(
     companion object {
         private const val RU = "ru"
         private const val EN = "en"
-        private const val LOW = "1"
-        private const val MEDIUM = "2"
-        private const val HIGH = "3"
-        private const val LOW_H = "1h"
-        private const val MEDIUM_H = "2h"
-        private const val HIGH_H = "3h"
+        private const val INTERESTING_PLACES = "interesting_places"
+        private const val FOOD = "foods"
+        private const val BANKS = "banks"
+        private const val SHOPS = "shops"
+        private const val TRANSPORT = "transport"
     }
 }
 

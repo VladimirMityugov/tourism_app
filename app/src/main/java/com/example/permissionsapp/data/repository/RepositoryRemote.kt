@@ -18,7 +18,6 @@ class RepositoryRemote @Inject constructor(
         longitude: Double,
         latitude: Double,
         kinds: List<String>?,
-        rating: String?,
         placeName: String?
     ): Places {
         return placesApi.getPlacesAround(
@@ -27,7 +26,6 @@ class RepositoryRemote @Inject constructor(
             longitude = longitude,
             latitude = latitude,
             kinds = kinds,
-            rating = rating,
             placeName = placeName
         )
     }

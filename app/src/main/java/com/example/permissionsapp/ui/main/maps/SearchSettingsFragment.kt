@@ -3,6 +3,7 @@ package com.example.permissionsapp.ui.main.maps
 
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,6 +23,9 @@ import com.google.android.material.slider.Slider
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 
+
+private const val TAG = "SEARCH_SETTINGS"
+
 @RequiresApi(Build.VERSION_CODES.O)
 @AndroidEntryPoint
 class SearchSettingsFragment : BottomSheetDialogFragment() {
@@ -39,14 +43,7 @@ class SearchSettingsFragment : BottomSheetDialogFragment() {
     private lateinit var resetRadius: AppCompatTextView
     private lateinit var slider: Slider
     private lateinit var clearKindsButton: AppCompatTextView
-    private lateinit var ratingRadioGroup: RadioGroup
-    private lateinit var ratingLow: RadioButton
-    private lateinit var ratingMedium: RadioButton
-    private lateinit var ratingHigh: RadioButton
-    private lateinit var ratingLowH: RadioButton
-    private lateinit var ratingMediumH: RadioButton
-    private lateinit var ratingHighH: RadioButton
-    private lateinit var clearRatingButton: AppCompatTextView
+
 
 
     private val viewModel: MyViewModel by activityViewModels()
@@ -72,61 +69,54 @@ class SearchSettingsFragment : BottomSheetDialogFragment() {
         slider = binding.slider
         resetRadius = binding.anyRadius
         clearKindsButton = binding.clearKinds
-        ratingRadioGroup = binding.ratingRadioGroup
-        ratingLow = binding.rating1
-        ratingMedium = binding.rating2
-        ratingHigh = binding.rating3
-        ratingLowH = binding.rating1H
-        ratingMediumH = binding.rating2H
-        ratingHighH = binding.rating3H
-        clearRatingButton = binding.clearRating
 
-        clearRatingButton.setOnClickListener {
-            ratingRadioGroup.clearCheck()
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.getPlacesKinds().collectLatest { placeKindList ->
+                Log.d(TAG, "Places are : $placeKindList")
+                val placesKinds = mutableListOf<String>()
+                placeKindList.forEach {
+                    placesKinds.add(it.kind)
+                }
+                viewModel.updatePlacesKindsList(placesKinds)
+                viewModel.checkPlacesKinds(placesKinds)
+                if(placesKinds.isEmpty())viewModel.hideAllPlaces(true)
+                else viewModel.hideAllPlaces(false)
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.addedToPlacesKinds.collectLatest { checkBoxStatus ->
+                interestingPlacesCheckBox.isActivated = checkBoxStatus[INTERESTING_PLACES] == true
+                foodCheckBox.isActivated = checkBoxStatus[FOOD] == true
+                banksCheckBox.isActivated = checkBoxStatus[BANKS] == true
+                transportCheckBox.isActivated = checkBoxStatus[TRANSPORT] == true
+                shopsCheckBox.isActivated = checkBoxStatus[SHOPS] == true
+            }
         }
 
         interestingPlacesCheckBox.setOnCheckedChangeListener { buttonView, isChecked ->
             interestingPlacesCheckBox.isActivated = isChecked
+            viewModel.onPlacesKindsClick(INTERESTING_PLACES)
         }
 
         foodCheckBox.setOnCheckedChangeListener { buttonView, isChecked ->
             foodCheckBox.isActivated = isChecked
+            viewModel.onPlacesKindsClick(FOOD)
         }
 
         shopsCheckBox.setOnCheckedChangeListener { buttonView, isChecked ->
             shopsCheckBox.isActivated = isChecked
+            viewModel.onPlacesKindsClick(SHOPS)
         }
 
         banksCheckBox.setOnCheckedChangeListener { buttonView, isChecked ->
             banksCheckBox.isActivated = isChecked
+            viewModel.onPlacesKindsClick(BANKS)
         }
 
         transportCheckBox.setOnCheckedChangeListener { buttonView, isChecked ->
             transportCheckBox.isActivated = isChecked
-        }
-
-        ratingLow.setOnCheckedChangeListener { buttonView, isChecked ->
-            ratingLow.isActivated = isChecked
-        }
-
-        ratingMedium.setOnCheckedChangeListener { buttonView, isChecked ->
-            ratingMedium.isActivated = isChecked
-        }
-
-        ratingHigh.setOnCheckedChangeListener { buttonView, isChecked ->
-            ratingHigh.isActivated = isChecked
-        }
-
-        ratingLowH.setOnCheckedChangeListener { buttonView, isChecked ->
-            ratingLowH.isActivated = isChecked
-        }
-
-        ratingMediumH.setOnCheckedChangeListener { buttonView, isChecked ->
-            ratingMediumH.isActivated = isChecked
-        }
-
-        ratingHighH.setOnCheckedChangeListener { buttonView, isChecked ->
-            ratingHighH.isActivated = isChecked
+            viewModel.onPlacesKindsClick(TRANSPORT)
         }
 
         clearKindsButton.setOnClickListener {
@@ -159,11 +149,7 @@ class SearchSettingsFragment : BottomSheetDialogFragment() {
     }
 
     private fun uncheckAll() {
-        interestingPlacesCheckBox.isChecked = false
-        foodCheckBox.isChecked = false
-        shopsCheckBox.isChecked = false
-        banksCheckBox.isChecked = false
-        transportCheckBox.isChecked = false
+        viewModel.deleteAllPlacesKinds()
     }
 
     private fun resetRadius() {
@@ -175,4 +161,12 @@ class SearchSettingsFragment : BottomSheetDialogFragment() {
         _binding = null
     }
 
+
+    companion object {
+        private const val INTERESTING_PLACES = "interesting_places"
+        private const val FOOD = "foods"
+        private const val BANKS = "banks"
+        private const val SHOPS = "shops"
+        private const val TRANSPORT = "transport"
+    }
 }

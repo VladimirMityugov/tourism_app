@@ -8,6 +8,8 @@ import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
+import android.location.Location
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -43,18 +45,10 @@ private const val TAG = "MAP_FRAGMENT"
 @AndroidEntryPoint
 class MapsFragment : Fragment() {
 
-    companion object {
-        fun newInstance() = MapsFragment()
-        private val REQUIRED_PERMISSIONS: Array<String> = buildList {
-            add(Manifest.permission.ACCESS_COARSE_LOCATION)
-            add(Manifest.permission.ACCESS_FINE_LOCATION)
-        }.toTypedArray()
-    }
-
     private val launcher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             if (!it.values.isEmpty() && it.values.all { true }) {
-//                startLocation()
+                Log.d(TAG, "ALL PERMISSIONS ARE GRANTED")
             }
         }
 
@@ -62,9 +56,10 @@ class MapsFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var cameraUpdate: CameraUpdate
-    private lateinit var fusedClient: FusedLocationProviderClient
     private lateinit var userPositionMarker: Marker
+    private lateinit var locationAccuracyCircle: Circle
     private lateinit var searchSettingsButton: AppCompatImageButton
+    private lateinit var hideShowButton: AppCompatImageButton
     private var needAnimateCamera = true
     private var info: ObjectInfo? = null
     private val markers = mutableMapOf<String, String>()
@@ -72,79 +67,6 @@ class MapsFragment : Fragment() {
     private var map: GoogleMap? = null
 
     private val viewModel: MyViewModel by activityViewModels()
-
-//    private val locationCallback = object : LocationCallback() {
-//        override fun onLocationResult(result: LocationResult) {
-//            result.lastLocation.let { location ->
-//                if (location != null) {
-//                    locationSourceListener?.onLocationChanged(location)
-//
-//                    viewModel.updateCoordinates(
-//                        latitude = location.latitude,
-//                        longitude = location.longitude
-//                    )
-//
-//                    Log.d(TAG, "Latitude: ${location.latitude}, longitude: ${location.longitude}")
-//                    val latLng = LatLng(location.latitude, location.longitude)
-//
-//                    userPositionMarker = map?.addMarker(
-//                        MarkerOptions()
-//                            .position(latLng)
-//                            .icon(
-//                                bitmapDescriptorFromVector(
-//                                    requireContext(),
-//                                    R.drawable.marker_google_maps
-//                                )
-//                            )
-//                            .title("Its my location")
-//
-//                    )!!
-//
-//
-//                    cameraUpdate = CameraUpdateFactory.newLatLngZoom(
-//                        latLng, 15f
-//                    )
-//
-//
-//                    if (needAnimateCamera) {
-//                        map?.moveCamera(cameraUpdate)
-//                        needAnimateCamera = false
-//                    }
-//viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-//    val location = DefaultLocationClient(requireContext(),fusedClient).getLocationUpdates(5000)
-//    Log.d(TAG, "Location is : $location ")
-//}
-//                    viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-//                        viewModel.places.collectLatest { places ->
-//                            places?.features?.forEach { feature ->
-//                                val museumsCoordinates = LatLng(
-//                                    feature.geometry.coordinates[1],
-//                                    feature.geometry.coordinates[0]
-//                                )
-//                                val xid = feature.properties.xid
-//                                val marker = map?.addMarker(
-//                                    MarkerOptions()
-//                                        .position(museumsCoordinates)
-//                                        .icon(
-//                                            bitmapDescriptorFromVector(
-//                                                requireContext(),
-//                                                R.drawable.marker_android
-//                                            )
-//                                        )
-//                                        .title(feature.properties.name)
-//                                        .snippet("Latitude: ${feature.geometry.coordinates[1]}\nLongitude: ${feature.geometry.coordinates[0]}")
-//                                )?.id
-//                                if (marker != null) {
-//                                    markers[marker] = xid
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
-
 
     private val onMapReadyCallback = OnMapReadyCallback {
         map = it
@@ -184,7 +106,7 @@ class MapsFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        fusedClient = LocationServices.getFusedLocationProviderClient(requireContext())
+//        fusedClient = LocationServices.getFusedLocationProviderClient(requireContext())
         checkPermissions()
     }
 
@@ -204,6 +126,13 @@ class MapsFragment : Fragment() {
         mapFragment?.getMapAsync(onMapReadyCallback)
 
         searchSettingsButton = binding.searchSettingsButton
+        hideShowButton = binding.hideShowButton
+
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.hideAllPlaces.collectLatest {
+                hideShowButton.isActivated = !it
+            }
+        }
 
         searchSettingsButton.setOnClickListener {
             onSearchSettingsClick()
@@ -211,74 +140,97 @@ class MapsFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             viewModel.getCurrentLocation(5000).collectLatest { location ->
-
-                val latLng = LatLng(location.latitude, location.longitude)
-
-                userPositionMarker = map?.addMarker(
-                    MarkerOptions()
-                        .position(latLng)
-                        .icon(
-                            bitmapDescriptorFromVector(
-                                requireContext(),
-                                R.drawable.marker_google_maps
+                viewModel.getPlacesKinds().collectLatest { placeKindList ->
+                    Log.d(TAG, "Places for search are : $placeKindList")
+                    val placesKinds = mutableListOf<String>()
+                    placeKindList.forEach {
+                        placesKinds.add(it.kind)
+                    }
+                    viewModel.updatePlacesKindsList(placesKinds)
+                    viewModel.hideAllPlaces.collectLatest { hideAll ->
+                        Log.d(TAG, "HIDE status is : $hideAll")
+                        if (!hideAll) {
+                            Log.d(TAG, "SHOW PLACES")
+                            viewModel.getPlacesAround(
+                                location.longitude,
+                                location.latitude,
+                                placesKinds,
+                                null
                             )
-                        )
-                        .title("Its my location")
-                )!!
-
-                cameraUpdate = CameraUpdateFactory.newLatLngZoom(
-                    latLng, 15f
-                )
-
-
-                if (needAnimateCamera) {
-                    map?.moveCamera(cameraUpdate)
-                    needAnimateCamera = false
-                }
-                viewModel.getPlacesAround(location.longitude, location.latitude, null)
-                viewModel.places.collectLatest { places ->
-                    places?.features?.forEach { feature ->
-                        val placesCoordinates = LatLng(
-                            feature.geometry.coordinates[1],
-                            feature.geometry.coordinates[0]
-                        )
-                        val xid = feature.properties.xid
-                        val marker = map?.addMarker(
-                            MarkerOptions()
-                                .position(placesCoordinates)
-                                .icon(
-                                    bitmapDescriptorFromVector(
-                                        requireContext(),
-                                        R.drawable.marker_android
-                                    )
+                            showPlaces(location)
+                        } else {
+                            Log.d(TAG, "HIDE PLACES")
+                            hideAllPlaces(location)
+                        }
+                        hideShowButton.setOnClickListener {
+                            if (hideAll) {
+                                viewModel.hideAllPlaces(false)
+                                Log.d(TAG, "SHOW PLACES")
+                                viewModel.getPlacesAround(
+                                    location.longitude,
+                                    location.latitude,
+                                    placesKinds,
+                                    null
                                 )
-                                .title(feature.properties.name)
-                                .snippet("Latitude: ${feature.geometry.coordinates[1]}\nLongitude: ${feature.geometry.coordinates[0]}")
-                        )?.id
-                        if (marker != null) {
-                            markers[marker] = xid
+                                showPlaces(location)
+                                viewModel.onPlacesKindsClick(INTERESTING_PLACES)
+                            } else {
+                                viewModel.hideAllPlaces(true)
+                                Log.d(TAG, "HIDE PLACES")
+                                hideAllPlaces(location)
+                            }
                         }
                     }
                 }
             }
         }
+    }
 
+    override fun onStop() {
+        super.onStop()
+        needAnimateCamera = false
+    }
+
+    private fun showPlaces(location: Location) {
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.places.collectLatest {
-                Log.d(TAG, "Places are $it")
-                if (it != null) {
-                    viewModel.saveObjectsToDB(it)
+            viewModel.places.collectLatest { places ->
+                viewModel.hideAllPlaces.collectLatest { hideAllPlaces ->
+                    if (!hideAllPlaces) {
+                        Log.d(TAG, "Places are called")
+                        map!!.clear()
+                        places?.features?.forEach { feature ->
+                            val placesCoordinates = LatLng(
+                                feature.geometry.coordinates[1],
+                                feature.geometry.coordinates[0]
+                            )
+                            val xid = feature.properties.xid
+                            val marker = map?.addMarker(
+                                MarkerOptions()
+                                    .position(placesCoordinates)
+                                    .icon(
+                                        bitmapDescriptorFromVector(
+                                            requireContext(),
+                                            R.drawable.marker_android
+                                        )
+                                    )
+                                    .title(feature.properties.name)
+                                    .snippet("Latitude: ${feature.geometry.coordinates[1]}\nLongitude: ${feature.geometry.coordinates[0]}")
+                            )?.id
+                            if (marker != null) {
+                                markers[marker] = xid
+                            }
+                        }
+                        drawUserPositionMarker(location)
+                        drawLocationAccuracyCircle(location)
+                        Log.d(TAG, "Places are $places")
+//                if (places != null) {
+//                    viewModel.saveObjectsToDB(places)
+//                }
+                    }
                 }
             }
         }
     }
-
-//    override fun onStop() {
-//        super.onStop()
-//        needAnimateCamera = false
-//        fusedClient.removeLocationUpdates(locationCallback)
-//    }
-
 
     private fun checkPermissions() {
         Log.d(TAG, "check permissions")
@@ -289,7 +241,7 @@ class MapsFragment : Fragment() {
             ) == PackageManager.PERMISSION_GRANTED
         }
         if (allGranted) {
-//            startLocation()
+            Log.d(TAG, "ALL PERMISSIONS ARE GRANTED")
         } else {
             if (shouldShowRequestPermissionRationale(REQUIRED_PERMISSIONS[0])) {
                 createAlertDialog()
@@ -298,22 +250,6 @@ class MapsFragment : Fragment() {
             }
         }
     }
-
-//    @SuppressLint("MissingPermission")
-//    private fun startLocation() {
-//
-//        map?.isMyLocationEnabled ?: return
-//
-//        val request = LocationRequest.Builder(1000L)
-//            .setIntervalMillis(1000L)
-//            .build()
-//
-//        fusedClient.requestLocationUpdates(
-//            request,
-//            locationCallback,
-//            Looper.getMainLooper()
-//        )
-//    }
 
     private fun getInfoWindowAdapter(): GoogleMap.InfoWindowAdapter {
         return object : GoogleMap.InfoWindowAdapter {
@@ -345,7 +281,6 @@ class MapsFragment : Fragment() {
                     }
                 }
             }
-
             override fun getInfoWindow(p0: Marker): View {
                 setInfoWindowText(p0)
                 return myInfoWindowView
@@ -358,45 +293,44 @@ class MapsFragment : Fragment() {
         }
     }
 
-    private fun drawLocationAccuracyCircle(locationResult: LocationResult) {
-        val location = locationResult.lastLocation
-//        if (location != null) {
-//            val latLng = LatLng(location.latitude, location.longitude)
-//            if (this.locationAccuracyCircle == null) {
-//                this.locationAccuracyCircle = map!!.addCircle(
-//                    CircleOptions()
-//                        .center(latLng)
-//                        .fillColor(Color.argb(64, 0, 0, 0))
-//                        .strokeColor(Color.argb(64, 0, 0, 0))
-//                        .strokeWidth(0.0f)
-//                        .radius(location.accuracy.toDouble())
-//                ) //set readius to horizonal accuracy in meter.
-//            } else {
-//                this.locationAccuracyCircle.setCenter(latLng)
-//            }
-//        }
+    private fun drawLocationAccuracyCircle(location: Location) {
+        val latLng = LatLng(location.latitude, location.longitude)
+        locationAccuracyCircle = map!!.addCircle(
+            CircleOptions()
+                .center(latLng)
+                .fillColor(Color.argb(64, 0, 0, 0))
+                .strokeColor(Color.argb(64, 0, 0, 0))
+                .strokeWidth(0.0f)
+                .radius(location.accuracy.toDouble())
+        )
     }
 
-    private fun drawUserPositionMarker(locationResult: LocationResult) {
-        val location = locationResult.lastLocation
-        if (location != null) {
-//            val latLng = LatLng(location.latitude, location.longitude)
-//            if (this.userPositionMarkerBitmapDescriptor == null) {
-//                userPositionMarkerBitmapDescriptor =
-//                    BitmapDescriptorFactory.fromResource(R.drawable.)
-//            }
-//            if (userPositionMarker == null) {
-//                userPositionMarker = map!!.addMarker(
-//                    MarkerOptions()
-//                        .position(latLng)
-//                        .flat(true)
-//                        .anchor(0.5f, 0.5f)
-//                        .icon(this.userPositionMarkerBitmapDescriptor)
-//                )!!
-//            } else {
-//                userPositionMarker.position = latLng
-//            }
+    private fun drawUserPositionMarker(location: Location) {
+        val latLng = LatLng(location.latitude, location.longitude)
+        userPositionMarker = map?.addMarker(
+            MarkerOptions()
+                .position(latLng)
+                .anchor(0.5f, 0.5f)
+                .icon(
+                    bitmapDescriptorFromVector(
+                        requireContext(),
+                        R.drawable.current_location_icon
+                    )
+                )
+                .title("Its my location")
+        )!!
+        cameraUpdate = CameraUpdateFactory.newLatLngZoom(
+            latLng, 15f
+        )
+        if (needAnimateCamera) {
+            map?.moveCamera(cameraUpdate)
+            needAnimateCamera = false
         }
+    }
+
+    private fun hideAllPlaces(location: Location) {
+        map!!.clear()
+        drawUserPositionMarker(location)
     }
 
     private fun setMapStyle() {
@@ -477,4 +411,14 @@ class MapsFragment : Fragment() {
         super.onDestroyView()
         _binding = null
     }
+
+    companion object {
+        fun newInstance() = MapsFragment()
+        private const val INTERESTING_PLACES = "interesting_places"
+        private val REQUIRED_PERMISSIONS: Array<String> = buildList {
+            add(Manifest.permission.ACCESS_COARSE_LOCATION)
+            add(Manifest.permission.ACCESS_FINE_LOCATION)
+        }.toTypedArray()
+    }
+
 }

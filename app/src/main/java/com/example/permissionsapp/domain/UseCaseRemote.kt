@@ -14,7 +14,6 @@ class UseCaseRemote @Inject constructor(private val repositoryRemote: Repository
         longitude: Double,
         latitude: Double,
         kinds: List<String>?,
-        rating: String?,
         placeName: String?
     ): Places {
         return repositoryRemote.getPlacesAround(
@@ -23,7 +22,6 @@ class UseCaseRemote @Inject constructor(private val repositoryRemote: Repository
             longitude = longitude,
             latitude = latitude,
             kinds = kinds,
-            rating = rating,
             placeName = placeName
         )
     }

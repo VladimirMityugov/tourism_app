@@ -1,39 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<androidx.constraintlayout.widget.ConstraintLayout android:id="@+id/map_geo"
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/map_geo"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/myBlack"
-    tools:context="com.example.permissionsapp.ui.main.maps.MapsFragment"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    tools:context="com.example.permissionsapp.ui.main.maps.MapsFragment">
 
     <com.google.android.material.card.MaterialCardView
+        android:id="@+id/frame"
         android:layout_width="match_parent"
         android:layout_height="650dp"
-        android:id="@+id/frame"
-        android:layout_marginTop="40dp"
         android:layout_marginStart="8dp"
+        android:layout_marginTop="40dp"
         android:layout_marginEnd="8dp"
         app:cardCornerRadius="8dp"
-        app:strokeWidth="1dp"
-        app:strokeColor="@color/myOrange"
-        app:layout_constraintVertical_bias="0"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0"
+        app:strokeColor="@color/myOrange"
+        app:strokeWidth="1dp">
 
         <androidx.appcompat.widget.AppCompatImageButton
+            android:id="@+id/search_settings_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/search_settings_button"
-            android:src="@drawable/settings_icon"
-            android:elevation="5dp"
-            android:background = "@color/transparent"
+            android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
-            android:layout_marginStart="8dp"/>
+            android:background="@color/transparent"
+            android:elevation="5dp"
+            android:src="@drawable/settings_icon" />
+
+        <androidx.appcompat.widget.AppCompatImageButton
+            android:id="@+id/hide_show_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="50dp"
+            android:background="@drawable/switched_background"
+            android:elevation="5dp" />
 
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/map"
@@ -45,17 +54,16 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-<androidx.appcompat.widget.AppCompatTextView
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:id="@+id/text"
-    android:text="hello"
-    app:layout_constraintTop_toBottomOf="@id/frame"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintEnd_toEndOf="parent"
-    android:layout_marginTop="26dp"
-    android:textSize="40sp"
-    />
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="26dp"
+        android:text="hello"
+        android:textSize="40sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/frame" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
 

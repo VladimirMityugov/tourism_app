@@ -2,13 +2,16 @@ package com.example.permissionsapp.presentation.utility
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.DialogInterface
 import android.location.Location
 import android.location.LocationManager
 import android.os.Looper
+import com.example.permissionsapp.ui.main.maps.MapsFragment
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow

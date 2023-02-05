@@ -40,6 +40,10 @@ object AppModule {
 
     @Provides
     @ViewModelScoped
+    fun providePlacesKindsDao(dataBase: MyDataBase) = dataBase.placesKindsDao
+
+    @Provides
+    @ViewModelScoped
     fun provideDefaultLocationClient(app: Application): DefaultLocationClient {
         return DefaultLocationClient(
             app.applicationContext,

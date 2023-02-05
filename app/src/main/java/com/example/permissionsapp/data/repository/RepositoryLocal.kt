@@ -3,15 +3,34 @@ package com.example.permissionsapp.data.repository
 
 import com.example.permissionsapp.data.local.dao.ObjectDao
 import com.example.permissionsapp.data.local.dao.PhotoDao
+import com.example.permissionsapp.data.local.dao.PlacesKindsDao
 import com.example.permissionsapp.data.local.entities.ObjectInfo
 import com.example.permissionsapp.data.local.entities.PhotoData
+import com.example.permissionsapp.data.local.entities.PlacesForSearch
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 class RepositoryLocal @Inject constructor(
     private val dao: PhotoDao,
-    private val objectDao: ObjectDao
+    private val objectDao: ObjectDao,
+    private val placesKindsDao: PlacesKindsDao
 ) {
+
+    fun getPlacesKindsFromDb(): Flow<List<PlacesForSearch>> {
+        return placesKindsDao.getAllPlaces()
+    }
+
+    suspend fun insertPlacesKindsToDb(placesForSearch: PlacesForSearch) {
+        placesKindsDao.insertPlaces(placesForSearch)
+    }
+
+    suspend fun deletePlaceKindFromDb(placeKind: String) {
+        placesKindsDao.deletePlace(placeKind)
+    }
+
+    suspend fun deleteAllPlacesKinds(){
+        placesKindsDao.deleteAllPlacesKinds()
+    }
 
     fun getPhotosFromDb(): Flow<List<PhotoData>> {
         return dao.getAllPhoto()

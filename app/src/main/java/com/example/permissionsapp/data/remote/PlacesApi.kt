@@ -15,7 +15,6 @@ interface PlacesApi {
         @Query("lon") longitude: Double,
         @Query("lat") latitude: Double,
         @Query("kinds")kinds:List<String>?,
-        @Query("rate")rating:String?,
         @Query("name")placeName: String?
     ): Places
 

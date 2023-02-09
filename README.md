@@ -1,4 +1,4 @@
-# tourism_app
+# Amazing routes
 ### Make photos, attach them to your routes, share with friends. Available in English and Russian
 
 

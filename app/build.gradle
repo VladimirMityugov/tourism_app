@@ -77,7 +77,7 @@ dependencies {
     //Maps
     implementation 'com.google.android.gms:play-services-maps:18.1.0'
 
-    // Google Sign In SDK
+     // Google Sign In SDK
     implementation 'com.google.android.gms:play-services-auth:20.4.1'
 
     //Firebase Sign in

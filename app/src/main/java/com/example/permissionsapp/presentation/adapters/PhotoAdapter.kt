@@ -12,7 +12,7 @@ import com.example.tourismApp.R
 import com.example.tourismApp.databinding.PhotoItemBinding
 import javax.inject.Inject
 
-class MyAdapter @Inject constructor(
+class PhotoAdapter @Inject constructor(
     val onItemClick: (PhotoData) -> Unit,
     val onLongClick: (PhotoData) -> Unit
 ) : ListAdapter<PhotoData, MyViewHolder>(
@@ -31,8 +31,17 @@ class MyAdapter @Inject constructor(
         val item = getItem(position)
         with(holder.binding) {
             date.text = buildString {
-                append("Date: ")
-                append(item.date)
+//                append("lat: ")
+//                append(item.latitude)
+//                append(" lng: ")
+//                append(item.longitude)
+//                append("\n")
+                if (item.description != null) {
+                    append(item.description.take(15))
+                    if (item.description.length > 15) {
+                        append("...")
+                    }
+                }
             }
             Glide
                 .with(photo.context)

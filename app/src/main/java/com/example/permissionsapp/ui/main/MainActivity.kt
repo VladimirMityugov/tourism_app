@@ -14,17 +14,17 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val username = intent.getStringExtra("username")
-        val bundle = Bundle()
-        bundle.putString("username", username)
-
-        val listPhotosFragment = ListPhotosFragment.newInstance()
-        listPhotosFragment.arguments = bundle
+//        val username = intent.getStringExtra("username")
+//        val bundle = Bundle()
+//        bundle.putString("username", username)
+//
+//        val listPhotosFragment = ListPhotosFragment.newInstance()
+//        listPhotosFragment.arguments = bundle
 
         setContentView(R.layout.activity_main)
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .replace(R.id.fragmentLayout, listPhotosFragment)
+                .replace(R.id.fragmentLayout,  ListPhotosFragment.newInstance())
                 .commitNow()
         }
     }

@@ -6,6 +6,7 @@ import android.content.DialogInterface
 import android.location.Location
 import android.location.LocationManager
 import android.os.Looper
+import android.util.Log
 import com.example.permissionsapp.ui.main.maps.MapsFragment
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -19,7 +20,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-
+private const val TAG = "LOCATION CLIENT"
 
 class DefaultLocationClient (
     private val context: Context,
@@ -30,9 +31,9 @@ class DefaultLocationClient (
     override fun getLocationUpdates(interval: Long): Flow<Location> {
         return callbackFlow {
             if (!context.hasLocationPermission()) {
-                throw LocationClient.LocationException("Missing location permission")
+                Log.d(TAG, "no permission")
+//                throw LocationClient.LocationException("Missing location permission")
             }
-
             val locationManager =
                 context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
             val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)

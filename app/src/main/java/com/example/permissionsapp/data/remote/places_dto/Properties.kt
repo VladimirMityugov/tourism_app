@@ -1,4 +1,4 @@
-package com.example.permissionsapp.data.remote.places_info_dto
+package com.example.permissionsapp.data.remote.places_dto
 
 data class Properties(
     val kinds: String,

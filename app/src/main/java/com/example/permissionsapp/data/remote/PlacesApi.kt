@@ -18,8 +18,9 @@ interface PlacesApi {
         @Query("name")placeName: String?
     ): Places
 
-    @GET("ru/places/xid/{xid}?")
+    @GET("{lang}/places/xid/{xid}?")
     suspend fun getPlaceInfo(
+        @Path("lang")language: String,
         @Path("xid") xid: String,
         @Query ("apikey") apikey: String = KEY
     ): PlaceInfo

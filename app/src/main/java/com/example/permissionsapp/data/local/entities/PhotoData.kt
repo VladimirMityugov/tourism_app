@@ -14,5 +14,9 @@ data class PhotoData @Inject constructor(
     @ColumnInfo
     val pic_src: String,
     @ColumnInfo
-    val description: String?
+    val description: String?,
+    @ColumnInfo
+    val latitude: Double,
+    @ColumnInfo
+    val longitude: Double
         )

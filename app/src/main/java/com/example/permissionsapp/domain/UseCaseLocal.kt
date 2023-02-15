@@ -36,12 +36,16 @@ class UseCaseLocal @Inject constructor(
         repositoryLocal.insertPhotosToDb(photoData)
     }
 
+    suspend fun addPhotoDescription(descriptionText: String?, uri:String){
+        repositoryLocal.addPhotoDescription(descriptionText =descriptionText , uri = uri)
+    }
+
     suspend fun deletePhoto(uri: String) {
         repositoryLocal.deleteFromDb(uri)
     }
 
-    fun getObjectInfo(): Flow<List<ObjectInfo>> {
-        return repositoryLocal.getObjectInfoFromDb()
+    fun getAllObjectInfo(): Flow<List<ObjectInfo>> {
+        return repositoryLocal.getAllObjectsFromDb()
     }
 
     suspend fun getObjectByIdInfo(xid: String): ObjectInfo {

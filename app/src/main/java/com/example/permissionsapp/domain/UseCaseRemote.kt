@@ -26,8 +26,8 @@ class UseCaseRemote @Inject constructor(private val repositoryRemote: Repository
         )
     }
 
-    suspend fun getPlaceInfo(xid: String): PlaceInfo {
-        return repositoryRemote.getPlaceInfo(xid)
+    suspend fun getPlaceInfo(language: String, xid: String): PlaceInfo {
+        return repositoryRemote.getPlaceInfo(language, xid)
     }
 
 }

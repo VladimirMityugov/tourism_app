@@ -16,6 +16,10 @@ class RepositoryLocal @Inject constructor(
     private val placesKindsDao: PlacesKindsDao
 ) {
 
+    suspend fun addPhotoDescription(descriptionText: String?, uri:String){
+        dao.insertPhotoDescription(descriptionText =descriptionText , uri = uri)
+    }
+
     fun getPlacesKindsFromDb(): Flow<List<PlacesForSearch>> {
         return placesKindsDao.getAllPlaces()
     }
@@ -44,7 +48,7 @@ class RepositoryLocal @Inject constructor(
         dao.deletePhoto(uri)
     }
 
-    fun getObjectInfoFromDb(): Flow<List<ObjectInfo>> {
+    fun getAllObjectsFromDb(): Flow<List<ObjectInfo>> {
         return objectDao.getAllObjects()
     }
 

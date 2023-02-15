@@ -1,4 +1,4 @@
-package com.example.permissionsapp.ui.main.photos
+package com.example.permissionsapp.ui.main.main_screen
 
 import android.Manifest
 import android.content.Intent
@@ -25,6 +25,8 @@ import com.example.permissionsapp.presentation.MyViewModel
 import com.example.permissionsapp.presentation.PhotoAdapter
 import com.example.permissionsapp.ui.main.LoginActivity
 import com.example.permissionsapp.ui.main.maps.MapsFragment
+import com.example.permissionsapp.ui.main.photos.CollectionGalleryFragment
+import com.example.permissionsapp.ui.main.photos.PhotoFragment
 import com.example.tourismApp.R
 import com.example.tourismApp.databinding.FragmentListPhotosBinding
 import com.google.firebase.auth.FirebaseAuth
@@ -34,14 +36,11 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
 
-private const val TAG = "LIST_PHOTOS"
-private const val DATE_FORMAT = "dd-MM-yyyy \n hh-mm"
-
 @AndroidEntryPoint
-class ListPhotosFragment : Fragment() {
+class MainScreenFragment : Fragment() {
 
     companion object {
-        fun newInstance() = ListPhotosFragment()
+        fun newInstance() = MainScreenFragment()
         private val REQUEST_PERMISSIONS: Array<String> = buildList {
             add(Manifest.permission.READ_EXTERNAL_STORAGE)
             if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
@@ -53,7 +52,7 @@ class ListPhotosFragment : Fragment() {
     private val launcher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             if (!it.values.isEmpty() && it.values.all { true }) {
-Log.d(TAG, "ALL PERMISSIONS ARE GRANTED")
+                Log.d(TAG, "ALL PERMISSIONS ARE GRANTED")
             }
         }
 

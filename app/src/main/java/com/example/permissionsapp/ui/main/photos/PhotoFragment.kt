@@ -24,13 +24,17 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.example.permissionsapp.data.local.entities.PhotoData
 import com.example.permissionsapp.presentation.MyViewModel
+import com.example.permissionsapp.presentation.utility.MyLocation
 import com.example.tourismApp.R
 import com.example.tourismApp.databinding.FragmentPhotoBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -54,7 +58,7 @@ class PhotoFragment : Fragment() {
 
     private val launcher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-            if (it.values.all { true }) {
+            if (it.values. all { true }) {
                 startCamera()
             }
         }
@@ -70,6 +74,7 @@ class PhotoFragment : Fragment() {
     private lateinit var previewImage: ImageView
     private lateinit var galleryButton: ImageButton
     private lateinit var cameraSwitcher: AppCompatImageButton
+    private var myLocation = MyLocation(0.0, 0.0)
 
 
     private val viewModel: MyViewModel by activityViewModels()
@@ -86,6 +91,8 @@ class PhotoFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         checkPermissions()
+
+
 
         takePhotoButton = binding.takePhotoButton
         previewImage = binding.previewImage
@@ -106,12 +113,13 @@ class PhotoFragment : Fragment() {
         galleryButton.setOnClickListener {
             moveToPhotosList()
         }
+
+
     }
 
     private fun takePhoto() {
         Log.d(TAG, "Take photo")
         val imageCapture = imageCapture ?: return
-
 
         val contentValues = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, currentDate)
@@ -140,23 +148,31 @@ class PhotoFragment : Fragment() {
                         onImageSaved(output: ImageCapture.OutputFileResults) {
                     val uri = output.savedUri
                     val date = contentValues.get(MediaStore.MediaColumns.DISPLAY_NAME)
-                    Log.d(TAG, "Date is $date")
+
+
+                    //Select this photo in ViewModel
+                    viewModel.selectItem(
+                        uri = uri.toString()
+                    )
+
+
+                    val location = viewModel.getCurrentLocation(1000L)
+
+                    //Save this photo to DataBase
                     viewModel.insertPhotos(
                         uri.toString(),
                         date as String,
-                        null
+                        null,
+                        myLocation.latitude,
+                        myLocation.longitude
                     )
+
+
                     val msg = "Photo capture succeeded: $uri"
                     Log.d(TAG, msg)
 
-                    viewModel.selectItem(
-                        item = PhotoData(
-                            date = date.toString(),
-                            pic_src = uri.toString(),
-                            description = null
-                        )
-                    )
 
+                    //Display this photo in preview
                     Glide.with(requireContext())
                         .load(uri.toString())
                         .circleCrop()
@@ -170,6 +186,12 @@ class PhotoFragment : Fragment() {
     private fun startCamera() {
         Log.d(TAG, "Start camera")
 
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.getCurrentLocation(5000).collectLatest { location ->
+                Log.d(TAG, "My location : ${location.latitude}, ${location.longitude}")
+                myLocation = MyLocation(location.latitude, location.longitude)
+            }
+        }
         val cameraProvider = ProcessCameraProvider.getInstance(this.requireContext())
         cameraProvider.addListener({
             val cameraProviderConfiguration = cameraProvider.get()
@@ -187,8 +209,9 @@ class PhotoFragment : Fragment() {
 
             cameraSelector = cameraBack
 
+            //Front/back camera switcher
             cameraSwitcher.setOnClickListener {
-                if(cameraSelector == cameraBack){
+                if (cameraSelector == cameraBack) {
                     cameraSelector = cameraFront
                     cameraProviderConfiguration.unbindAll()
                     cameraProviderConfiguration.bindToLifecycle(
@@ -197,7 +220,7 @@ class PhotoFragment : Fragment() {
                         preview,
                         imageCapture
                     )
-                }else{
+                } else {
                     cameraSelector = cameraBack
                     cameraProviderConfiguration.unbindAll()
                     cameraProviderConfiguration.bindToLifecycle(
@@ -208,7 +231,6 @@ class PhotoFragment : Fragment() {
                     )
                 }
             }
-
             imageCapture = ImageCapture.Builder()
                 .setFlashMode(ImageCapture.FLASH_MODE_AUTO)
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)

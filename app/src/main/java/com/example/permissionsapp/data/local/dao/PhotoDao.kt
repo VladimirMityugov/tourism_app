@@ -15,6 +15,9 @@ interface PhotoDao {
  @Query("SELECT * FROM photoData")
  fun getAllPhoto():Flow<List<PhotoData>>
 
+ @Query ("UPDATE photoData SET description = :descriptionText WHERE pic_src =:uri ")
+ suspend fun insertPhotoDescription(descriptionText: String?,uri:String)
+
  @Query("DELETE FROM photoData WHERE pic_src = :uri")
  suspend fun deletePhoto(uri: String)
 }

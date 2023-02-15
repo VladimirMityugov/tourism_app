@@ -38,4 +38,8 @@
     <string name="rating_2_h">2H</string>
     <string name="rating_3_h">3H</string>
     <string name="choose_places_rating">Choose places rating</string>
+    <string name="add_description">Add description</string>
+    <string name="description_photo_hint">You can add description of this photo here</string>
+    <string name="save">Save</string>
+    <string name="route_name">route_name</string>
 </resources>

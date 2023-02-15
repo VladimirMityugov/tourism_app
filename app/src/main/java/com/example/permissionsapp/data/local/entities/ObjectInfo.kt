@@ -20,5 +20,9 @@ data class ObjectInfo @Inject constructor(
     @ColumnInfo
     val postcode: String?,
     @ColumnInfo
-    val road: String?
+    val road: String?,
+    @ColumnInfo
+    val description: String?,
+    @ColumnInfo
+    val image: String?
 )

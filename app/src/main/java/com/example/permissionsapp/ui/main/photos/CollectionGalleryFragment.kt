@@ -87,7 +87,7 @@ class CollectionGalleryFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             viewModel.getPhotoList().collectLatest { photoList ->
-                viewModel.selectedItem.collectLatest { selectedPhoto ->
+                viewModel.selectedItem.collectLatest { uri ->
 
                     galleryCollectionAdapter =
                         FragmentGalleryCollectionAdapter(
@@ -96,7 +96,7 @@ class CollectionGalleryFragment : Fragment() {
                         )
                     viewPager.adapter = galleryCollectionAdapter
 
-                    val photoToDisplay = photoList.find { it.pic_src == selectedPhoto?.pic_src }
+                    val photoToDisplay = photoList.find { it.pic_src == uri }
                     val pageToDisplay = photoList.indexOf(photoToDisplay)
                     viewPager.setCurrentItem(pageToDisplay, false)
                 }

@@ -30,9 +30,10 @@ class RepositoryRemote @Inject constructor(
         )
     }
 
-    suspend fun getPlaceInfo(xid: String): PlaceInfo {
+    suspend fun getPlaceInfo(language: String, xid: String): PlaceInfo {
         Log.d(TAG, "xid = $xid")
         return placesApi.getPlaceInfo(
+            language=language,
             xid = xid
         )
     }

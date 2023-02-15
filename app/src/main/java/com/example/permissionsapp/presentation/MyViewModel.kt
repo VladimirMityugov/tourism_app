@@ -8,6 +8,7 @@ import com.example.permissionsapp.data.local.entities.ObjectInfo
 import com.example.permissionsapp.data.local.entities.PhotoData
 import com.example.permissionsapp.data.local.entities.PlacesForSearch
 import com.example.permissionsapp.data.remote.places_dto.Places
+import com.example.permissionsapp.data.remote.places_info_dto.PlaceInfo
 import com.example.permissionsapp.domain.UseCaseLocal
 import com.example.permissionsapp.domain.UseCaseRemote
 import com.example.permissionsapp.presentation.utility.DefaultLocationClient
@@ -27,14 +28,23 @@ class MyViewModel @Inject constructor(
     private val locationClient: DefaultLocationClient
 ) : ViewModel() {
 
-    private val _selectedItem = MutableStateFlow<PhotoData?>(null)
+    private val _selectedItem = MutableStateFlow<String?>(null)
     val selectedItem = _selectedItem.asStateFlow()
 
     private val _places = MutableStateFlow<Places?>(null)
     val places = _places.asStateFlow()
 
-    private val _museumInfo = MutableStateFlow<ObjectInfo?>(null)
-    val museumInfo = _museumInfo.asStateFlow()
+    private val _objectSelected = MutableStateFlow<String?>(null)
+    val objectSelected = _objectSelected.asStateFlow()
+
+    private val _placesInfo = MutableStateFlow<PlaceInfo?>(null)
+    val placesInfo = _placesInfo.asStateFlow()
+
+    private val _objectInfo = MutableStateFlow<ObjectInfo?>(null)
+    val objectInfo = _objectInfo.asStateFlow()
+
+    private val _isAddedToDb = MutableStateFlow(false)
+    val isAddedToDb = _isAddedToDb.asStateFlow()
 
     private val _photos = MutableStateFlow<List<PhotoData>>(emptyList())
     val photos = _photos.asStateFlow()
@@ -68,8 +78,8 @@ class MyViewModel @Inject constructor(
     private val _hideAllPlaces = MutableStateFlow(true)
     val hideAllPlaces = _hideAllPlaces.asStateFlow()
 
-    fun selectItem(item: PhotoData) {
-        _selectedItem.value = item
+    fun selectItem(uri: String) {
+        _selectedItem.value = uri
     }
 
     init {
@@ -78,18 +88,34 @@ class MyViewModel @Inject constructor(
         }
     }
 
+
+    //PhotoActivity
     fun getPhotoList(): Flow<List<PhotoData>> = useCaseLocal.getPhotos()
 
 
-    fun insertPhotos(uri: String, date: String, description: String?) {
+    fun insertPhotos(
+        uri: String,
+        date: String,
+        description: String?,
+        latitude: Double,
+        longitude: Double
+    ) {
         viewModelScope.launch {
             useCaseLocal.insertPhotos(
                 photoData = PhotoData(
                     pic_src = uri,
                     date = date,
-                    description = description
+                    description = description,
+                    latitude = latitude,
+                    longitude = longitude
                 )
             )
+        }
+    }
+
+    fun addPhotoDescription(description: String?, uri: String) {
+        viewModelScope.launch {
+            useCaseLocal.addPhotoDescription(descriptionText = description, uri = uri)
         }
     }
 
@@ -99,6 +125,8 @@ class MyViewModel @Inject constructor(
         }
     }
 
+
+    //SearchSettings
     fun getPlacesKinds(): Flow<List<PlacesForSearch>> = useCaseLocal.getPlacesKindsFromDb()
 
     private fun insertPlacesKindsToDb(placeKind: String) {
@@ -176,17 +204,23 @@ class MyViewModel @Inject constructor(
         }
     }
 
-    fun getCurrentLocation(interval: Long): Flow<Location> =
-        locationClient.getLocationUpdates(interval)
-
     fun setRadius(value: Int) {
         _radius.value = value * 1000
     }
 
+    fun hideAllPlaces(status: Boolean) {
+        viewModelScope.launch {
+            _hideAllPlaces.value = status
+            Log.d(TAG, "HIDE ALL PLACES is ${_hideAllPlaces.value}")
+        }
+    }
+
+
+    //MapsActivity
     fun getPlacesAround(
         longitude: Double,
         latitude: Double,
-        kinds:List<String>?,
+        kinds: List<String>?,
         placeName: String?
     ) {
         viewModelScope.launch {
@@ -217,12 +251,11 @@ class MyViewModel @Inject constructor(
         }
     }
 
+    fun getCurrentLocation(interval: Long): Flow<Location> =
+        locationClient.getLocationUpdates(interval)
 
-    private fun getLanguage(): String {
-        return if (Locale.getDefault() == Locale("ru", "RU")) RU
-        else EN
-    }
 
+    //LoginActivity
     fun setUserName(name: String) {
         viewModelScope.launch {
             _currentUserName.value = name
@@ -259,67 +292,64 @@ class MyViewModel @Inject constructor(
         }
     }
 
-    fun saveObjectsToDB(places: Places) {
+
+    //PlaceInfo
+    private fun getPlaceInfo(xid: String) {
         viewModelScope.launch {
-            val placesAround = places.features
-            if (placesAround.isNotEmpty() && placesAround.size >= 5) {
-                Log.d(TAG, "museums around = $placesAround")
-                for (i in 1..5) {
-                    val it = placesAround[i]
-                    val xid = it.properties.xid
-                    Log.d(TAG, "xid of object to save into DB is $xid")
-                    val objectInfo = useCaseRemote.getPlaceInfo(xid)
-                    useCaseLocal.insertObjectInfo(
-                        objectInfo = ObjectInfo(
-                            xid = objectInfo.xid,
-                            name = objectInfo.name,
-                            country_code = objectInfo.address?.country_code,
-                            house_number = objectInfo.address?.house_number,
-                            postcode = objectInfo.address?.postcode,
-                            road = objectInfo.address?.road
-                        )
-                    )
-                    Log.d(
-                        TAG,
-                        "Data xid = ${objectInfo.xid}, name = ${objectInfo.name} for $xid has been saved to DB"
-                    )
-                }
+            _placesInfo.value = useCaseRemote.getPlaceInfo(
+                language = getLanguage(),
+                xid = xid
+            )
+        }
+    }
+
+    fun selectObject(xid: String) {
+        viewModelScope.launch {
+            _objectSelected.value = xid
+        }
+    }
+
+    val allObjects = useCaseLocal.getAllObjectInfo()
+
+    fun getObjectInfoById(xid: String, allObjects: List<ObjectInfo>) {
+        viewModelScope.launch {
+            if (allObjects.all { it.xid != xid }) {
+                getPlaceInfo(xid)
+                _isAddedToDb.value = false
+                Log.d(TAG, "Object with id $xid is not in DB")
+            } else {
+                _objectInfo.value = useCaseLocal.getObjectByIdInfo(xid)
+                _isAddedToDb.value = true
+                Log.d(TAG, "Object with id $xid is in DB")
             }
         }
     }
 
-    fun hideAllPlaces(status: Boolean){
+    fun saveObjectsToDB(placeInfo: PlaceInfo) {
         viewModelScope.launch {
-            _hideAllPlaces.value = status
-            Log.d(TAG, "HIDE ALL PLACES is ${_hideAllPlaces.value}")
-        }
-    }
-
-    private val allObjects = useCaseLocal.getObjectInfo()
-        .stateIn(
-            viewModelScope,
-            started = SharingStarted.WhileSubscribed(1000),
-            initialValue = emptyList()
-        )
-
-    fun getObjectInfoById(xid: String) {
-        viewModelScope.launch {
-            if (allObjects.value.all { it.xid != xid }) {
-                val placeInfo = useCaseRemote.getPlaceInfo(xid)
-                _museumInfo.value = ObjectInfo(
-                    xid = xid,
+            useCaseLocal.insertObjectInfo(
+                objectInfo = ObjectInfo(
+                    xid = placeInfo.xid,
                     name = placeInfo.name,
                     country_code = placeInfo.address?.country_code,
                     house_number = placeInfo.address?.house_number,
                     postcode = placeInfo.address?.postcode,
-                    road = placeInfo.address?.road
+                    road = placeInfo.address?.road,
+                    description = placeInfo.info?.descr,
+                    image = placeInfo.image
                 )
-            } else {
-                val objectInfo = useCaseLocal.getObjectByIdInfo(xid)
-                _museumInfo.value = objectInfo
-            }
+            )
+            Log.d(TAG, "Object with id ${placeInfo.xid} has been saved to DB")
+            _objectInfo.value = useCaseLocal.getObjectByIdInfo(placeInfo.xid)
         }
     }
+
+    //Auxiliary
+    private fun getLanguage(): String {
+        return if (Locale.getDefault() == Locale("ru", "RU")) RU
+        else EN
+    }
+
 
     companion object {
         private const val RU = "ru"

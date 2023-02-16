@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/navigation"
+    app:startDestination="@id/main">
+
+    <fragment
+        android:id="@+id/main"
+        android:name="com.example.permissionsapp.ui.main.main_screen.MainScreenFragment"
+        android:label="MainScreenFragment"
+        tools:layout="@layout/fragment_main_screen">
+        <action
+            android:id="@+id/action_main_to_maps"
+            app:destination="@id/maps"
+            app:enterAnim="@animator/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+    </fragment>
+    <action
+        android:id="@+id/action_global_mainScreenFragment"
+        app:destination="@id/main"
+        app:enterAnim="@anim/fui_slide_in_right"
+        app:exitAnim="@anim/fui_slide_out_left" />
+
+    <fragment
+        android:id="@+id/profile"
+        android:name="com.example.permissionsapp.ui.main.profile.ProfileFragment"
+        android:label="ProfileFragment"
+        tools:layout="@layout/fragment_profile" />
+    <action
+        android:id="@+id/action_global_profileFragment"
+        app:destination="@id/profile"
+        app:enterAnim="@anim/fui_slide_in_right"
+        app:exitAnim="@anim/fui_slide_out_left" />
+
+    <fragment
+        android:id="@+id/maps"
+        android:name="com.example.permissionsapp.ui.main.maps.MapsFragment"
+        android:label="MapsFragment"
+        tools:layout="@layout/fragment_maps">
+        <action
+            android:id="@+id/action_maps_to_photoFragment"
+            app:destination="@id/photoFragment"
+            app:enterAnim="@anim/fui_slide_in_right"
+            app:exitAnim="@anim/fui_slide_out_left" />
+    </fragment>
+    <action
+        android:id="@+id/action_global_mapsFragment"
+        app:destination="@id/maps"
+        app:enterAnim="@anim/fui_slide_in_right"
+        app:exitAnim="@anim/fui_slide_out_left" />
+
+    <fragment
+        android:id="@+id/photoFragment"
+        android:name="com.example.permissionsapp.ui.main.photos.PhotoFragment"
+        android:label="fragment_photo"
+        tools:layout="@layout/fragment_photo">
+        <action
+            android:id="@+id/action_photoFragment_to_singlePhotoFragment"
+            app:destination="@id/singlePhotoFragment"
+            app:enterAnim="@anim/fui_slide_in_right"
+            app:exitAnim="@anim/fui_slide_out_left" />
+        <action
+            android:id="@+id/action_photoFragment_to_listPhotosFragment"
+            app:destination="@id/listPhotosFragment"
+            app:enterAnim="@anim/fui_slide_in_right"
+            app:exitAnim="@anim/fui_slide_out_left" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/singlePhotoFragment"
+        android:name="com.example.permissionsapp.ui.main.photos.SinglePhotoFragment"
+        android:label="fragment_single_photo"
+        tools:layout="@layout/fragment_single_photo" />
+    <fragment
+        android:id="@+id/listPhotosFragment"
+        android:name="com.example.permissionsapp.ui.main.photos.ListPhotosFragment"
+        android:label="fragment_list_photos"
+        tools:layout="@layout/fragment_list_photos" />
+
+</navigation>

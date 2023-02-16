@@ -10,8 +10,11 @@
         <item name="colorSecondaryVariant">@color/myOrange</item>
         <item name="colorOnSecondary">@color/myGrey</item>
         <!-- Status bar color. -->
-        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
         <!-- Customize your theme here. -->
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:windowTranslucentNavigation">false</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 
     <style name="MyTheme" parent="Theme.MaterialComponents.NoActionBar" />

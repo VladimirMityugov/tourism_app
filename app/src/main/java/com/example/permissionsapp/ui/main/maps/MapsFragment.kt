@@ -32,6 +32,7 @@ import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.example.permissionsapp.presentation.MyViewModel
 import com.example.permissionsapp.presentation.utility.MyLocation
@@ -54,7 +55,8 @@ class MapsFragment : Fragment() {
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             if (!it.values.isEmpty() && it.values.all { true }) {
                 Log.d(TAG, "ALL PERMISSIONS ARE GRANTED. 0")
-                val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
+                val mapFragment =
+                    childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
                 mapFragment?.getMapAsync(onMapReadyCallback)
             }
         }
@@ -67,6 +69,10 @@ class MapsFragment : Fragment() {
     private lateinit var locationAccuracyCircle: Circle
     private lateinit var searchSettingsButton: AppCompatImageButton
     private lateinit var hideShowButton: AppCompatImageButton
+    private lateinit var takePhotoButton: AppCompatButton
+    private lateinit var routeButton: AppCompatImageButton
+    private var routeIsStarted: Boolean = false
+
     private var needAnimateCamera = true
     private var myLocation = MyLocation(0.0, 0.0)
     private val markers = mutableMapOf<String, String>()
@@ -167,6 +173,12 @@ class MapsFragment : Fragment() {
 
         searchSettingsButton = binding.searchSettingsButton
         hideShowButton = binding.hideShowButton
+        takePhotoButton = binding.takePhotoButton
+        routeButton = binding.startRouteButton
+
+        takePhotoButton.setOnClickListener {
+            findNavController().navigate(R.id.action_maps_to_photoFragment)
+        }
 
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             viewModel.hideAllPlaces.collectLatest {
@@ -176,6 +188,20 @@ class MapsFragment : Fragment() {
 
         searchSettingsButton.setOnClickListener {
             onSearchSettingsClick()
+        }
+
+        routeButton.isActivated = false
+
+        routeButton.setOnClickListener {
+            if (!routeIsStarted) {
+                Log.d(TAG, "Route is not started")
+                routeButton.isActivated = false
+                routeIsStarted = true
+            } else {
+                Log.d(TAG, "Route is started")
+                routeButton.isActivated = true
+                routeIsStarted = false
+            }
         }
 
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {

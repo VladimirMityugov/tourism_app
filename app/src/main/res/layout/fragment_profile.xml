@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/fragment_profile"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/myBlack"
+    tools:context="com.example.permissionsapp.ui.main.photos.ListPhotosFragment">
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/user_icon"
+        android:src="@drawable/user_icon"
+        app:layout_constraintBottom_toTopOf="@id/scrollView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.5"
+        app:layout_constraintHorizontal_bias="0.05"
+        />
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/user_title"
+        android:text="@string/user_name"
+        android:textColor="@color/myOrange"
+        android:textSize="20sp"
+        android:layout_marginStart="8dp"
+        app:layout_constraintBottom_toTopOf="@id/scrollView"
+        app:layout_constraintStart_toEndOf="@id/user_icon"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.5"
+      app:layout_constraintHorizontal_bias="0"
+        />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:id="@+id/sign_out_button"
+        android:background="@drawable/logout"
+        app:layout_constraintBottom_toTopOf="@id/scrollView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.5"
+        app:layout_constraintHorizontal_bias="0.95"
+        />
+
+    <ScrollView
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/scrollView"
+       android:layout_marginBottom="100dp"
+        android:layout_marginTop="50dp">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/photosRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+        android:layout_marginBottom="80dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:spanCount="3"
+        tools:listitem="@layout/photo_item" />
+
+    </ScrollView>
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/welcome_message"
+        android:text="@string/welcome_message"
+        android:textStyle="bold"
+        android:textColor="@color/myOrange"
+        android:textSize="25sp"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1"
+        android:layout_marginBottom="120dp"/>
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/cameraIconButton"
+        android:layout_width="70dp"
+        android:layout_height="70dp"
+        android:background="@drawable/ic_camera_icon"
+        android:layout_marginBottom="30dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        />
+
+    <androidx.appcompat.widget.AppCompatImageButton
+        android:id="@+id/mapsButton"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/my_custom_button_gallery"
+        android:src="@drawable/map_icon"
+        app:layout_constraintBottom_toBottomOf="@id/cameraIconButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/cameraIconButton"
+        app:layout_constraintTop_toTopOf="@id/cameraIconButton"/>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

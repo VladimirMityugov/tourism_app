@@ -9,106 +9,117 @@
     tools:context="com.example.permissionsapp.ui.main.photos.ListPhotosFragment">
 
     <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/user_icon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/user_icon"
+        android:layout_marginTop="8dp"
         android:src="@drawable/user_icon"
-        app:layout_constraintBottom_toTopOf="@id/scrollView"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.5"
         app:layout_constraintHorizontal_bias="0.05"
-        />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/user_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/user_title"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="12dp"
         android:text="@string/user_name"
         android:textColor="@color/myOrange"
         android:textSize="20sp"
-        android:layout_marginStart="8dp"
-        app:layout_constraintBottom_toTopOf="@id/scrollView"
-        app:layout_constraintStart_toEndOf="@id/user_icon"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.5"
-      app:layout_constraintHorizontal_bias="0"
-        />
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintStart_toEndOf="@id/user_icon"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/sign_out_button"
         android:layout_width="30dp"
         android:layout_height="30dp"
-        android:id="@+id/sign_out_button"
+        android:layout_marginTop="12dp"
         android:background="@drawable/logout"
-        app:layout_constraintBottom_toTopOf="@id/scrollView"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.5"
         app:layout_constraintHorizontal_bias="0.95"
-        />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/route_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="50dp"
+        android:text="@string/route_name"
+        android:textAppearance="@style/customTextStyleLarge"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <ScrollView
-        android:orientation="vertical"
+        android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/scrollView"
-       android:layout_marginBottom="100dp"
-        android:layout_marginTop="50dp">
+        android:layout_marginTop="90dp"
+        android:layout_marginBottom="300dp"
+        android:orientation="vertical">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/photosRecyclerView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-        android:layout_marginBottom="80dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:spanCount="3"
-        tools:listitem="@layout/photo_item" />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/photosRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="80dp"
+            android:orientation="vertical"
+            app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:spanCount="3"
+            tools:listitem="@layout/photo_item" />
 
     </ScrollView>
 
-    <androidx.appcompat.widget.AppCompatTextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/welcome_message"
-        android:text="@string/welcome_message"
-        android:textStyle="bold"
-        android:textColor="@color/myOrange"
-        android:textSize="25sp"
-        android:visibility="invisible"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="1"
-        android:layout_marginBottom="120dp"/>
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/cameraIconButton"
-        android:layout_width="70dp"
-        android:layout_height="70dp"
-        android:background="@drawable/ic_camera_icon"
-        android:layout_marginBottom="30dp"
+    <ScrollView
+        android:id="@+id/description_scroll_view"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        />
+        app:layout_constraintTop_toBottomOf="@id/scrollView"
+        app:layout_constraintVertical_bias="0">
 
-    <androidx.appcompat.widget.AppCompatImageButton
-        android:id="@+id/mapsButton"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:background="@drawable/my_custom_button_gallery"
-        android:src="@drawable/map_icon"
-        app:layout_constraintBottom_toBottomOf="@id/cameraIconButton"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/cameraIconButton"
-        app:layout_constraintTop_toTopOf="@id/cameraIconButton"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <androidx.appcompat.widget.AppCompatEditText
+                android:id="@+id/route_description_field"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="26dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/border"
+                android:hint="@string/route_description_hint"
+                android:minHeight="50dp"
+                android:textAlignment="center"
+                android:textAppearance="@style/customTextStyle"
+                android:textColorHint="@color/myLightGrey"
+                app:layout_constraintVertical_bias="0" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/save_description_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="15dp"
+                android:background="@drawable/close_button_background"
+                android:text="@string/save"
+                android:textAppearance="@style/customTextStyle" />
+
+        </LinearLayout>
+    </ScrollView>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

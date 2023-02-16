@@ -42,4 +42,9 @@
     <string name="description_photo_hint">You can add description of this photo here</string>
     <string name="save">Save</string>
     <string name="route_name">route_name</string>
+    <string name="main">main</string>
+    <string name="new_route">new_route</string>
+    <string name="profile">profile</string>
+    <string name="main_screen_info_message">Your routes will be displayed here. Let`s started. Just push button</string>
+    <string name="route_description_hint">Add your route description</string>
 </resources>

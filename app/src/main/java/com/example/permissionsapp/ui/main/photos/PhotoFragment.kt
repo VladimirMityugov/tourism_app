@@ -25,6 +25,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.example.permissionsapp.data.local.entities.PhotoData
 import com.example.permissionsapp.presentation.MyViewModel
@@ -58,7 +59,7 @@ class PhotoFragment : Fragment() {
 
     private val launcher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-            if (it.values. all { true }) {
+            if (it.values.all { true }) {
                 startCamera()
             }
         }
@@ -100,10 +101,7 @@ class PhotoFragment : Fragment() {
         cameraSwitcher = binding.rotateCamera
 
         previewImage.setOnClickListener {
-            requireActivity().supportFragmentManager.beginTransaction()
-                .replace(R.id.fragmentLayout, SinglePhotoFragment.newInstance())
-                .addToBackStack("Photo")
-                .commit()
+            findNavController().navigate(R.id.action_photoFragment_to_singlePhotoFragment)
         }
 
         takePhotoButton.setOnClickListener {
@@ -111,7 +109,7 @@ class PhotoFragment : Fragment() {
         }
 
         galleryButton.setOnClickListener {
-            moveToPhotosList()
+            findNavController().navigate(R.id.action_photoFragment_to_listPhotosFragment)
         }
 
 
@@ -281,10 +279,10 @@ class PhotoFragment : Fragment() {
     }
 
     private fun moveToPhotosList() {
-        requireActivity().supportFragmentManager.beginTransaction()
-            .replace(R.id.fragmentLayout, ListPhotosFragment.newInstance())
-            .addToBackStack("photo_fragment")
-            .commit()
+//        requireActivity().supportFragmentManager.beginTransaction()
+//            .replace(R.id.fragmentLayout, ListPhotosFragment.newInstance())
+//            .addToBackStack("photo_fragment")
+//            .commit()
     }
 
     private fun dialogLauncher() {

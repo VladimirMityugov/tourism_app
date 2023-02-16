@@ -23,7 +23,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/MyTheme"
+        android:theme="@style/Theme.PermissionsApp"
         tools:targetApi="33">
 
         <meta-data
@@ -44,7 +44,8 @@
 
         <activity
             android:name="com.example.permissionsapp.ui.main.LoginActivity"
-            android:exported="true">
+            android:exported="true"
+            android:theme="@style/MyTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

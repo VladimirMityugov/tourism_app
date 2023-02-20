@@ -1,14 +1,11 @@
-package com.example.permissionsapp.ui.main
+package com.example.permissionsapp.presentation.services
 
 
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.PendingIntent
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Build
 import android.provider.Settings
@@ -16,9 +13,9 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.IconCompat
-import com.example.permissionsapp.presentation.App
+import com.example.permissionsapp.presentation.utility.Constants.FIREBASE_NOTIFICATION_ID
+import com.example.permissionsapp.presentation.utility.Constants.FIREBASE_SERVICE_CHANNEL_ID
 import com.example.tourismApp.R
 import com.google.android.datatransport.BuildConfig
 
@@ -36,7 +33,7 @@ class FcmService: FirebaseMessagingService() {
 
         val intent = Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
             putExtra(Settings.EXTRA_APP_PACKAGE, BuildConfig.APPLICATION_ID)
-            putExtra(Settings.EXTRA_CHANNEL_ID, App.CHANNEL_ID)
+            putExtra(Settings.EXTRA_CHANNEL_ID, FIREBASE_SERVICE_CHANNEL_ID)
         }
 
         val pendingIntent =
@@ -52,8 +49,7 @@ class FcmService: FirebaseMessagingService() {
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT
             )
-            val largeIcon = createBitmap(this, R.drawable.photographer)
-            val notification = NotificationCompat.Builder(this, App.CHANNEL_ID)
+            val notification = NotificationCompat.Builder(this, FIREBASE_SERVICE_CHANNEL_ID)
                 .setSmallIcon(
                     IconCompat.createWithResource(this, R.drawable.ic_notification_icon)
                 )
@@ -63,7 +59,6 @@ class FcmService: FirebaseMessagingService() {
                 .setContentText(if(message.data.isNotEmpty()){convertDate(message.data["date"]) + ": " + message.data["message"]}
                 else message.notification?.body)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setLargeIcon(largeIcon)
                 .setContentIntent(pendingIntent)
                 .setColor(Color.argb(255,241,106,42))
                 .setAutoCancel(true)
@@ -83,18 +78,8 @@ class FcmService: FirebaseMessagingService() {
             // for ActivityCompat#requestPermissions for more details.
             return
         }
-        NotificationManagerCompat.from(this).notify(NOTIFICATION_ID, notification)
+        NotificationManagerCompat.from(this).notify(FIREBASE_NOTIFICATION_ID, notification)
 
-    }
-
-    private fun createBitmap(context: Context, vectorResId: Int): Bitmap? {
-        return ContextCompat.getDrawable(context, vectorResId)?.run {
-            setBounds(0, 0, intrinsicWidth, intrinsicHeight)
-            val bitmap =
-                Bitmap.createBitmap(intrinsicWidth, intrinsicHeight, Bitmap.Config.ARGB_8888)
-            draw(Canvas(bitmap))
-            return bitmap
-        }
     }
 
     private fun convertDate(date: String?): String {
@@ -103,9 +88,5 @@ class FcmService: FirebaseMessagingService() {
             "dd-MM-yyyy hh-mm",
             Locale.getDefault()
         ).format(date.toLong())
-    }
-
-    companion object {
-        private const val NOTIFICATION_ID = 2
     }
 }

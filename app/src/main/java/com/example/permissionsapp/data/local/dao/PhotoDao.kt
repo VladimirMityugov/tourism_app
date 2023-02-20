@@ -12,12 +12,16 @@ interface PhotoDao {
  @Insert
  suspend fun insertPhotos(vararg photoData: PhotoData)
 
- @Query("SELECT * FROM photoData")
- fun getAllPhoto():Flow<List<PhotoData>>
+ @Query("SELECT * FROM photoData WHERE routeName =:routeName")
+ suspend fun getPhotosByRouteName(routeName: String): List<PhotoData>
 
  @Query ("UPDATE photoData SET description = :descriptionText WHERE pic_src =:uri ")
  suspend fun insertPhotoDescription(descriptionText: String?,uri:String)
 
  @Query("DELETE FROM photoData WHERE pic_src = :uri")
  suspend fun deletePhoto(uri: String)
+
+ @Query("SELECT * FROM photoData ORDER BY random()")
+ fun getAllRoutes(): Flow<List<PhotoData>>
+
 }

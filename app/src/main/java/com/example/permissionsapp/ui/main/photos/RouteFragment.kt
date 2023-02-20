@@ -1,7 +1,6 @@
 package com.example.permissionsapp.ui.main.photos
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -9,39 +8,34 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.ImageButton
-import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
-import androidx.appcompat.widget.AppCompatButton
+import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
-import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.RecyclerView
 import com.example.permissionsapp.data.local.entities.PhotoData
 import com.example.permissionsapp.presentation.MyViewModel
 import com.example.permissionsapp.presentation.PhotoAdapter
-import com.example.permissionsapp.ui.main.LoginActivity
-import com.example.permissionsapp.ui.main.maps.MapsFragment
 import com.example.tourismApp.R
-import com.example.tourismApp.databinding.FragmentListPhotosBinding
-import com.google.firebase.auth.FirebaseAuth
+import com.example.tourismApp.databinding.FragmentRouteBinding
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
 
-private const val TAG = "LIST_PHOTOS"
+private const val TAG = "ROUTE_FRAGMENT"
 private const val DATE_FORMAT = "dd-MM-yyyy \n hh-mm"
 
 @AndroidEntryPoint
-class ListPhotosFragment : Fragment() {
+class RouteFragment : Fragment() {
 
     companion object {
-        fun newInstance() = ListPhotosFragment()
+        fun newInstance() = RouteFragment()
         private val REQUEST_PERMISSIONS: Array<String> = buildList {
             add(Manifest.permission.READ_EXTERNAL_STORAGE)
             if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
@@ -53,30 +47,30 @@ class ListPhotosFragment : Fragment() {
     private val launcher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             if (!it.values.isEmpty() && it.values.all { true }) {
-Log.d(TAG, "ALL PERMISSIONS ARE GRANTED")
+                Log.d(TAG, "ALL PERMISSIONS ARE GRANTED")
             }
         }
 
-    private var _binding: FragmentListPhotosBinding? = null
+    private var _binding: FragmentRouteBinding? = null
     private val binding get() = _binding!!
 
 
-
-    private lateinit var username: TextView
-    private lateinit var signOut: AppCompatButton
-    private lateinit var firebaseAuth: FirebaseAuth
+    private lateinit var routeName: AppCompatTextView
+    private lateinit var photosRecyclerView: RecyclerView
 
     private val viewModel: MyViewModel by activityViewModels()
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private val photoAdapter = PhotoAdapter(onItemClick = { PhotoData -> onItemClick(PhotoData) },
-        onLongClick = { PhotoData -> onLongItemClick(PhotoData) })
+    private val photoAdapter = PhotoAdapter(
+        onItemClick = { PhotoData -> onItemClick(PhotoData) },
+        onLongClick = { PhotoData -> onLongItemClick(PhotoData) }
+    )
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentListPhotosBinding.inflate(layoutInflater)
+        _binding = FragmentRouteBinding.inflate(layoutInflater)
         return binding.root
     }
 
@@ -85,38 +79,26 @@ Log.d(TAG, "ALL PERMISSIONS ARE GRANTED")
         super.onViewCreated(view, savedInstanceState)
 
 
-        binding.photosRecyclerView.adapter = photoAdapter
+        routeName = binding.routeName
+        photosRecyclerView = binding.photosRecyclerView
+
+        photosRecyclerView.adapter = photoAdapter
 
 
-        username = binding.userTitle
-        signOut = binding.signOutButton
-        firebaseAuth = FirebaseAuth.getInstance()
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
 
-        signOut.setOnClickListener {
-            firebaseAuth.signOut()
-            startActivity(Intent(requireContext(), LoginActivity::class.java))
-            requireActivity().finish()
-        }
-
-
-        if (firebaseAuth.currentUser?.displayName == null) {
-            viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-                viewModel.currentUserName.collectLatest { currentName ->
-                    Log.d(TAG, "Name is $currentName")
-                    if(currentName != null){
-                        username.isVisible = true
-                        username.text = currentName
-                    }
-                    username.isVisible = false
-                }
-            }
-        } else {
-            username.text = firebaseAuth.currentUser?.displayName.toString()
         }
 
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.getPhotoList().collect {
-                photoAdapter.submitList(it)
+            viewModel.photos.collectLatest { photos ->
+                photoAdapter.submitList(photos)
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.routeName.collectLatest { name ->
+                Log.d(TAG, "route name is : $name")
+                routeName.text = name
             }
         }
 
@@ -131,10 +113,7 @@ Log.d(TAG, "ALL PERMISSIONS ARE GRANTED")
 
     private fun onItemClick(item: PhotoData) {
         viewModel.selectItem(item.pic_src)
-//        requireActivity().supportFragmentManager.beginTransaction()
-//            .replace(R.id.fragmentLayout, CollectionGalleryFragment.newInstance())
-//            .addToBackStack("Photo_list")
-//            .commit()
+        findNavController().navigate(R.id.action_routeFragment_to_collectionGalleryFragment)
     }
 
     private fun checkPermissions() {

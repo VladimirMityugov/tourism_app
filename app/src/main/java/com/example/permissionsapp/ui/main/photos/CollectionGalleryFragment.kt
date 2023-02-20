@@ -31,7 +31,7 @@ class CollectionGalleryFragment : Fragment() {
 
     private lateinit var galleryCollectionAdapter: FragmentGalleryCollectionAdapter
     private lateinit var viewPager: ViewPager2
-    private lateinit var movieTitle: AppCompatTextView
+    private lateinit var routeName: AppCompatTextView
     private lateinit var closeButton: AppCompatImageButton
 
 
@@ -77,30 +77,32 @@ class CollectionGalleryFragment : Fragment() {
 
         viewPager = binding.pager
 
-        movieTitle = binding.movieTitle
+        routeName = binding.routeName
         closeButton = binding.closeButton
-
-
-
         viewPager.orientation = ViewPager2.ORIENTATION_HORIZONTAL
+
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.routeName.collectLatest { name ->
+                routeName.text = name
+            }
+        }
 
 
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.getPhotoList().collectLatest { photoList ->
-                viewModel.selectedItem.collectLatest { uri ->
+                viewModel.photos.collectLatest { photoList ->
+                    viewModel.selectedItem.collectLatest { uri ->
+                        galleryCollectionAdapter =
+                            FragmentGalleryCollectionAdapter(
+                                this@CollectionGalleryFragment,
+                                photoList.size
+                            )
+                        viewPager.adapter = galleryCollectionAdapter
 
-                    galleryCollectionAdapter =
-                        FragmentGalleryCollectionAdapter(
-                            this@CollectionGalleryFragment,
-                            photoList.size
-                        )
-                    viewPager.adapter = galleryCollectionAdapter
-
-                    val photoToDisplay = photoList.find { it.pic_src == uri }
-                    val pageToDisplay = photoList.indexOf(photoToDisplay)
-                    viewPager.setCurrentItem(pageToDisplay, false)
+                        val photoToDisplay = photoList.find { it.pic_src == uri }
+                        val pageToDisplay = photoList.indexOf(photoToDisplay)
+                        viewPager.setCurrentItem(pageToDisplay, false)
+                    }
                 }
-            }
         }
 
         closeButton.setOnClickListener {

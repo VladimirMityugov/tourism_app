@@ -36,8 +36,12 @@ class RepositoryLocal @Inject constructor(
         placesKindsDao.deleteAllPlacesKinds()
     }
 
-    fun getPhotosFromDb(): Flow<List<PhotoData>> {
-        return dao.getAllPhoto()
+    suspend fun getPhotosByRouteName(routeName: String): List<PhotoData> {
+        return dao.getPhotosByRouteName(routeName)
+    }
+
+    fun getRoutesFromDb(): Flow<List<PhotoData>> {
+        return dao.getAllRoutes()
     }
 
     suspend fun insertPhotosToDb(photoData: PhotoData) {

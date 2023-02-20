@@ -12,6 +12,7 @@ import com.example.permissionsapp.data.remote.places_info_dto.PlaceInfo
 import com.example.permissionsapp.domain.UseCaseLocal
 import com.example.permissionsapp.domain.UseCaseRemote
 import com.example.permissionsapp.presentation.utility.DefaultLocationClient
+import com.example.permissionsapp.presentation.utility.RouteStates
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -78,27 +79,42 @@ class MyViewModel @Inject constructor(
     private val _hideAllPlaces = MutableStateFlow(true)
     val hideAllPlaces = _hideAllPlaces.asStateFlow()
 
+    private val _routeName = MutableStateFlow<String?>(null)
+    val routeName = _routeName.asStateFlow()
+
+    private val _routeStatus = MutableStateFlow<RouteStates>(RouteStates.RouteStopped)
+    val routeStatus = _routeStatus.asStateFlow()
+
     fun selectItem(uri: String) {
         _selectedItem.value = uri
     }
 
     init {
         this.viewModelScope.launch {
-            getPhotoList()
+            getRoutesList()
         }
     }
 
 
     //PhotoActivity
-    fun getPhotoList(): Flow<List<PhotoData>> = useCaseLocal.getPhotos()
+    fun getRoutesList(): Flow<List<PhotoData>> = useCaseLocal.getRoutesFromDb().map { it -> it.distinctBy { it.routeName } }
 
+    fun getPhotosByRouteName(routeName: String) {
+        viewModelScope.launch {
+            _photos.value = useCaseLocal.getPhotosByRouteName(routeName)
+        }
+    }
+    fun selectRouteName(routeName: String) {
+        _routeName.value = routeName
+    }
 
     fun insertPhotos(
         uri: String,
         date: String,
         description: String?,
         latitude: Double,
-        longitude: Double
+        longitude: Double,
+        routeName: String
     ) {
         viewModelScope.launch {
             useCaseLocal.insertPhotos(
@@ -107,7 +123,8 @@ class MyViewModel @Inject constructor(
                     date = date,
                     description = description,
                     latitude = latitude,
-                    longitude = longitude
+                    longitude = longitude,
+                    routeName = routeName
                 )
             )
         }
@@ -253,6 +270,12 @@ class MyViewModel @Inject constructor(
 
     fun getCurrentLocation(interval: Long): Flow<Location> =
         locationClient.getLocationUpdates(interval)
+
+    fun changeRouteStatus(routeStates: RouteStates) {
+        viewModelScope.launch {
+            _routeStatus.value = routeStates
+        }
+    }
 
 
     //LoginActivity

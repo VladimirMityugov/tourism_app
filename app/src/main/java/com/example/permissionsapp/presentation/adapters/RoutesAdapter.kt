@@ -10,33 +10,31 @@ import com.bumptech.glide.Glide
 import com.example.permissionsapp.data.local.entities.PhotoData
 import com.example.tourismApp.R
 import com.example.tourismApp.databinding.PhotoItemBinding
+import com.example.tourismApp.databinding.RouteItemBinding
 import javax.inject.Inject
 
-class PhotoAdapter @Inject constructor(
-    val onItemClick: (PhotoData) -> Unit,
-    val onLongClick: (PhotoData) -> Unit
-) : ListAdapter<PhotoData, MyViewHolder>(
+class RoutesAdapter(
+    val onItemClick: (PhotoData) -> Unit
+) : ListAdapter<PhotoData, RoutesViewHolder>(
+
     DiffUtilCallback()
 ) {
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
-        return MyViewHolder(
-            binding = PhotoItemBinding.inflate(
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RoutesViewHolder {
+        return RoutesViewHolder(
+            binding = RouteItemBinding.inflate(
                 LayoutInflater.from(parent.context), parent, false
             )
         )
     }
 
-    override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: RoutesViewHolder, position: Int) {
         val item = getItem(position)
         with(holder.binding) {
-            date.text = buildString {
-                if (item.description != null) {
-                    append(item.description.take(15))
-                    if (item.description.length > 15) {
-                        append("...")
-                    }
-                }
+            routeName.text = item.routeName
+            routeDate.text = buildString {
+                append("Route date : ")
+                append(item.date)
             }
             Glide
                 .with(photo.context)
@@ -50,11 +48,6 @@ class PhotoAdapter @Inject constructor(
         holder.binding.root.setOnClickListener {
             onItemClick(item)
         }
-
-        holder.binding.root.setOnLongClickListener {
-            onLongClick(item)
-            true
-        }
     }
 
     override fun getItemCount(): Int {
@@ -62,9 +55,9 @@ class PhotoAdapter @Inject constructor(
     }
 }
 
-class MyViewHolder(val binding: PhotoItemBinding) : ViewHolder(binding.root)
+class RoutesViewHolder(val binding: RouteItemBinding) : ViewHolder(binding.root)
 
-class DiffUtilCallback : DiffUtil.ItemCallback<PhotoData>() {
+class DiffUtilRoutes : DiffUtil.ItemCallback<PhotoData>() {
     override fun areItemsTheSame(oldItem: PhotoData, newItem: PhotoData): Boolean {
         return oldItem.pic_src == newItem.pic_src
     }

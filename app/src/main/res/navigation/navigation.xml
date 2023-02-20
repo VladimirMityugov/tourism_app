@@ -15,6 +15,11 @@
             app:destination="@id/maps"
             app:enterAnim="@animator/nav_default_enter_anim"
             app:exitAnim="@anim/nav_default_exit_anim" />
+        <action
+            android:id="@+id/action_main_to_routeFragment"
+            app:destination="@id/routeFragment"
+            app:enterAnim="@animator/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
     </fragment>
     <action
         android:id="@+id/action_global_mainScreenFragment"
@@ -48,7 +53,8 @@
         android:id="@+id/action_global_mapsFragment"
         app:destination="@id/maps"
         app:enterAnim="@anim/fui_slide_in_right"
-        app:exitAnim="@anim/fui_slide_out_left" />
+        app:exitAnim="@anim/fui_slide_out_left"
+        app:launchSingleTop="true" />
 
     <fragment
         android:id="@+id/photoFragment"
@@ -61,10 +67,11 @@
             app:enterAnim="@anim/fui_slide_in_right"
             app:exitAnim="@anim/fui_slide_out_left" />
         <action
-            android:id="@+id/action_photoFragment_to_listPhotosFragment"
-            app:destination="@id/listPhotosFragment"
+            android:id="@+id/action_photoFragment_to_routeFragment"
+            app:destination="@id/routeFragment"
             app:enterAnim="@anim/fui_slide_in_right"
             app:exitAnim="@anim/fui_slide_out_left" />
+
     </fragment>
 
     <fragment
@@ -73,9 +80,20 @@
         android:label="fragment_single_photo"
         tools:layout="@layout/fragment_single_photo" />
     <fragment
-        android:id="@+id/listPhotosFragment"
-        android:name="com.example.permissionsapp.ui.main.photos.ListPhotosFragment"
+        android:id="@+id/routeFragment"
+        android:name="com.example.permissionsapp.ui.main.photos.RouteFragment"
         android:label="fragment_list_photos"
-        tools:layout="@layout/fragment_list_photos" />
+        tools:layout="@layout/fragment_route">
+        <action
+            android:id="@+id/action_routeFragment_to_collectionGalleryFragment"
+            app:destination="@id/collectionGalleryFragment"
+            app:enterAnim="@anim/fui_slide_in_right"
+            app:exitAnim="@anim/fui_slide_out_left" />
+    </fragment>
+    <fragment
+        android:id="@+id/collectionGalleryFragment"
+        android:name="com.example.permissionsapp.ui.main.photos.CollectionGalleryFragment"
+        android:label="fragment_gallery_collection"
+        tools:layout="@layout/fragment_gallery_collection" />
 
 </navigation>

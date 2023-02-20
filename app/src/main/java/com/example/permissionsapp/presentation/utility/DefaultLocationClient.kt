@@ -12,6 +12,7 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.channels.awaitClose
@@ -22,7 +23,7 @@ import javax.inject.Inject
 
 private const val TAG = "LOCATION CLIENT"
 
-class DefaultLocationClient (
+class DefaultLocationClient(
     private val context: Context,
     private val client: FusedLocationProviderClient
 ) : LocationClient {
@@ -32,7 +33,7 @@ class DefaultLocationClient (
         return callbackFlow {
             if (!context.hasLocationPermission()) {
                 Log.d(TAG, "no permission")
-//                throw LocationClient.LocationException("Missing location permission")
+                throw LocationClient.LocationException("Missing location permission")
             }
             val locationManager =
                 context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
@@ -45,6 +46,7 @@ class DefaultLocationClient (
             }
 
             val request = LocationRequest.Builder(interval)
+                .setPriority(PRIORITY_HIGH_ACCURACY)
                 .setIntervalMillis(interval)
                 .build()
 

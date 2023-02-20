@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import com.example.permissionsapp.presentation.utility.Constants
 import com.example.tourismApp.R
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.crashlytics.FirebaseCrashlytics
@@ -18,7 +19,10 @@ private const val TAG = "APP"
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
+        //set firebase crashlytics
         FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true)
+
+        //create channel for firebase notifications
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) createNotificationChannel()
 
         FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
@@ -35,17 +39,11 @@ class App : Application() {
     fun createNotificationChannel() {
         val name = getString(R.string.channel_name)
         val descriptionText = getString(R.string.channel_description)
-        val importance = NotificationManager.IMPORTANCE_DEFAULT
-        val myChannel = NotificationChannel(CHANNEL_ID, name, importance)
+        val importance = NotificationManager.IMPORTANCE_LOW
+        val myChannel = NotificationChannel(Constants.FIREBASE_SERVICE_CHANNEL_ID, name, importance)
         myChannel.description = descriptionText
-
-
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(myChannel)
     }
 
-
-    companion object {
-        const val CHANNEL_ID = "NOTIFICATION"
-    }
 }

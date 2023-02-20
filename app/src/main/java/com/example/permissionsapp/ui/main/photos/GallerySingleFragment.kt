@@ -49,7 +49,7 @@ class GallerySingleFragment : Fragment() {
         }
 
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.getPhotoList().collectLatest{photoList ->
+            viewModel.photos.collectLatest{photoList ->
                 Glide.with(galleryPicture.context)
                     .load(photoList[position!!].pic_src)
                     .into(galleryPicture)

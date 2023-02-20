@@ -14,6 +14,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.ImageView
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.OnBackPressedDispatcher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.camera.core.CameraSelector
@@ -29,6 +31,7 @@ import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.example.permissionsapp.data.local.entities.PhotoData
 import com.example.permissionsapp.presentation.MyViewModel
+import com.example.permissionsapp.presentation.utility.Constants.INTERVAL_FOR_LOCATION_UPDATES
 import com.example.permissionsapp.presentation.utility.MyLocation
 import com.example.tourismApp.R
 import com.example.tourismApp.databinding.FragmentPhotoBinding
@@ -41,28 +44,21 @@ import java.util.*
 
 
 private const val TAG = "PHOTO_FRAGMENT"
-private const val DATE_FORMAT = "dd-MM-yyyy \n hh-mm"
+private const val DATE_FORMAT = "yyyy-MM-dd hh:mm:ss"
 
 @AndroidEntryPoint
 class PhotoFragment : Fragment() {
 
-    companion object {
-        fun newInstance() = PhotoFragment()
-        private val REQUEST_PERMISSIONS: Array<String> = buildList {
-            add(Manifest.permission.CAMERA)
-            add(Manifest.permission.READ_EXTERNAL_STORAGE)
-            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-                add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            }
-        }.toTypedArray()
-    }
 
     private val launcher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             if (it.values.all { true }) {
                 startCamera()
+            } else {
+                findNavController().navigate(R.id.action_global_mapsFragment)
             }
         }
+
     private var _binding: FragmentPhotoBinding? = null
     private val binding get() = _binding!!
     private val currentDate = SimpleDateFormat(
@@ -109,7 +105,7 @@ class PhotoFragment : Fragment() {
         }
 
         galleryButton.setOnClickListener {
-            findNavController().navigate(R.id.action_photoFragment_to_listPhotosFragment)
+            findNavController().navigate(R.id.action_photoFragment_to_routeFragment)
         }
 
 
@@ -153,17 +149,21 @@ class PhotoFragment : Fragment() {
                         uri = uri.toString()
                     )
 
-
-                    val location = viewModel.getCurrentLocation(1000L)
-
                     //Save this photo to DataBase
-                    viewModel.insertPhotos(
-                        uri.toString(),
-                        date as String,
-                        null,
-                        myLocation.latitude,
-                        myLocation.longitude
-                    )
+                    viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+                        viewModel.routeName.collectLatest { routeName ->
+                            if (routeName != null) {
+                                viewModel.insertPhotos(
+                                    uri.toString(),
+                                    date as String,
+                                    null,
+                                    myLocation.latitude,
+                                    myLocation.longitude,
+                                    routeName
+                                )
+                            }
+                        }
+                    }
 
 
                     val msg = "Photo capture succeeded: $uri"
@@ -185,7 +185,7 @@ class PhotoFragment : Fragment() {
         Log.d(TAG, "Start camera")
 
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.getCurrentLocation(5000).collectLatest { location ->
+            viewModel.getCurrentLocation(INTERVAL_FOR_LOCATION_UPDATES).collectLatest { location ->
                 Log.d(TAG, "My location : ${location.latitude}, ${location.longitude}")
                 myLocation = MyLocation(location.latitude, location.longitude)
             }
@@ -267,8 +267,9 @@ class PhotoFragment : Fragment() {
                         dialogLauncher()
                     })
                     .setNegativeButton("Cancel", DialogInterface.OnClickListener { dialog, _ ->
+                        findNavController().navigate(R.id.action_global_mapsFragment)
                         dialog.dismiss()
-                        moveToPhotosList()
+
                     })
                     .create()
                     .show()
@@ -276,13 +277,6 @@ class PhotoFragment : Fragment() {
                 dialogLauncher()
             }
         }
-    }
-
-    private fun moveToPhotosList() {
-//        requireActivity().supportFragmentManager.beginTransaction()
-//            .replace(R.id.fragmentLayout, ListPhotosFragment.newInstance())
-//            .addToBackStack("photo_fragment")
-//            .commit()
     }
 
     private fun dialogLauncher() {
@@ -293,4 +287,16 @@ class PhotoFragment : Fragment() {
         super.onDestroyView()
         _binding = null
     }
+
+    companion object {
+        fun newInstance() = PhotoFragment()
+        private val REQUEST_PERMISSIONS: Array<String> = buildList {
+            add(Manifest.permission.CAMERA)
+            add(Manifest.permission.READ_EXTERNAL_STORAGE)
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            }
+        }.toTypedArray()
+    }
+
 }

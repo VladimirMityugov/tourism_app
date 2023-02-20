@@ -87,8 +87,7 @@
                 android:hint="@string/description_photo_hint"
                 android:minHeight="150dp"
                 android:textAlignment="center"
-                android:textAppearance="@style/customTextStyle"
-                android:textColorHint="@color/myLightGrey" />
+                android:textAppearance="@style/customTextStyle" />
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/save_description_button"

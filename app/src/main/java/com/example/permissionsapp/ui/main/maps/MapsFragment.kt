@@ -1,11 +1,9 @@
 package com.example.permissionsapp.ui.main.maps
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
-import android.content.DialogInterface
-import android.content.pm.PackageManager
+import android.content.Intent
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -18,13 +16,10 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.widget.AppCompatButton
-import androidx.appcompat.widget.AppCompatEditText
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.content.ContextCompat
@@ -35,12 +30,18 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.example.permissionsapp.presentation.MyViewModel
+import com.example.permissionsapp.presentation.utility.Constants.ACTION_START
+import com.example.permissionsapp.presentation.utility.Constants.ACTION_STOP
+import com.example.permissionsapp.presentation.services.LocationService
+import com.example.permissionsapp.presentation.utility.Constants.ACTION_PAUSE
+import com.example.permissionsapp.presentation.utility.Constants.INTERVAL_FOR_LOCATION_UPDATES
 import com.example.permissionsapp.presentation.utility.MyLocation
+import com.example.permissionsapp.presentation.utility.RouteStates
+import com.example.permissionsapp.presentation.utility.hasLocationPermission
 import com.example.tourismApp.R
 import com.example.tourismApp.databinding.FragmentMapsBinding
 import com.google.android.gms.maps.*
 import com.google.android.gms.maps.model.*
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import java.util.*
@@ -51,16 +52,6 @@ private const val TAG = "MAP_FRAGMENT"
 @AndroidEntryPoint
 class MapsFragment : Fragment() {
 
-    private val launcher =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-            if (!it.values.isEmpty() && it.values.all { true }) {
-                Log.d(TAG, "ALL PERMISSIONS ARE GRANTED. 0")
-                val mapFragment =
-                    childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
-                mapFragment?.getMapAsync(onMapReadyCallback)
-            }
-        }
-
     private var _binding: FragmentMapsBinding? = null
     private val binding get() = _binding!!
 
@@ -69,8 +60,9 @@ class MapsFragment : Fragment() {
     private lateinit var locationAccuracyCircle: Circle
     private lateinit var searchSettingsButton: AppCompatImageButton
     private lateinit var hideShowButton: AppCompatImageButton
-    private lateinit var takePhotoButton: AppCompatButton
-    private lateinit var routeButton: AppCompatImageButton
+    private lateinit var takePhotoButton: AppCompatImageButton
+    private lateinit var startRouteButton: AppCompatImageButton
+    private lateinit var stopRouteButton: AppCompatImageButton
     private var routeIsStarted: Boolean = false
 
     private var needAnimateCamera = true
@@ -111,16 +103,9 @@ class MapsFragment : Fragment() {
                         viewModel.placesInfo.collectLatest { placeInfo ->
                             viewModel.objectSelected.collectLatest { objectId ->
                                 if (!isAdded) {
-                                    Log.d(TAG, "Object with id $objectId is not in DB")
                                     if (placeInfo != null && placeInfo.xid == objectId) {
-                                        Log.d(
-                                            TAG,
-                                            "Object with name ${placeInfo.name} and xid ${placeInfo.xid} has been saved to DB"
-                                        )
                                         viewModel.saveObjectsToDB(placeInfo)
                                     }
-                                } else {
-                                    Log.d(TAG, "Object with id $objectId is already in DB")
                                 }
                             }
                         }
@@ -167,14 +152,17 @@ class MapsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        checkPermissions()
-//        val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
-//        mapFragment?.getMapAsync(onMapReadyCallback)
+
+        if (requireContext().hasLocationPermission()) {
+            val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
+            mapFragment?.getMapAsync(onMapReadyCallback)
+        }
 
         searchSettingsButton = binding.searchSettingsButton
         hideShowButton = binding.hideShowButton
         takePhotoButton = binding.takePhotoButton
-        routeButton = binding.startRouteButton
+        startRouteButton = binding.startRouteButton
+        stopRouteButton = binding.stopRouteButton
 
         takePhotoButton.setOnClickListener {
             findNavController().navigate(R.id.action_maps_to_photoFragment)
@@ -190,22 +178,71 @@ class MapsFragment : Fragment() {
             onSearchSettingsClick()
         }
 
-        routeButton.isActivated = false
-
-        routeButton.setOnClickListener {
-            if (!routeIsStarted) {
-                Log.d(TAG, "Route is not started")
-                routeButton.isActivated = false
-                routeIsStarted = true
-            } else {
-                Log.d(TAG, "Route is started")
-                routeButton.isActivated = true
-                routeIsStarted = false
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.routeName.collectLatest { routeName ->
+                viewModel.routeStatus.collectLatest { routeStatus ->
+                    if (routeName == null
+                        || routeStatus == RouteStates.RouteStopped
+                    ) {
+                        takePhotoButton.isActivated = false
+                        takePhotoButton.isEnabled = false
+                    } else {
+                        takePhotoButton.isActivated = true
+                        takePhotoButton.isEnabled = true
+                    }
+                }
             }
         }
 
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.getCurrentLocation(5000).collectLatest { location ->
+            viewModel.routeStatus.collectLatest { routeStatus ->
+                when (routeStatus) {
+                    RouteStates.RoutePaused -> {
+                        startRouteButton.isActivated = false
+                        stopRouteButton.isActivated = true
+                    }
+                    RouteStates.RouteStarted -> {
+                        startRouteButton.isActivated = true
+                        stopRouteButton.isActivated = true
+                    }
+                    RouteStates.RouteStopped -> {
+                        startRouteButton.isActivated = false
+                        stopRouteButton.isActivated = false
+                    }
+                }
+            }
+        }
+
+        startRouteButton.setOnClickListener {
+            viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+                viewModel.routeName.collectLatest { routeName ->
+                    if (routeName == null) {
+                        createRouteNameAlertDialog()
+                    } else {
+                        if (!routeIsStarted) {
+                            Log.d(TAG, "Route is not started")
+                            routeIsStarted = true
+                            viewModel.changeRouteStatus(RouteStates.RouteStarted)
+                            sendCommandToService(ACTION_START)
+                        } else {
+                            Log.d(TAG, "Route is started")
+                            routeIsStarted = false
+                            viewModel.changeRouteStatus(RouteStates.RoutePaused)
+                            sendCommandToService(ACTION_PAUSE)
+                        }
+                    }
+                }
+            }
+        }
+
+        stopRouteButton.setOnClickListener {
+            viewModel.changeRouteStatus(RouteStates.RouteStopped)
+            sendCommandToService(ACTION_STOP)
+        }
+
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.getCurrentLocation(INTERVAL_FOR_LOCATION_UPDATES).collectLatest { location ->
+                Log.d(TAG, "Location is ${location.latitude}, ${location.longitude}")
                 myLocation = MyLocation(location.latitude, location.longitude)
                 viewModel.getPlacesKinds().collectLatest { placeKindList ->
                     val placesKinds = mutableListOf<String>()
@@ -245,6 +282,48 @@ class MapsFragment : Fragment() {
                 }
             }
         }
+
+    }
+
+    private fun createRouteNameAlertDialog() {
+
+        val dialog = Dialog(requireContext())
+        val dialogView = layoutInflater.inflate(R.layout.route_name_dialog, null)
+        val closeButton = dialogView.findViewById<AppCompatImageButton>(R.id.close_button)
+        val saveButton = dialogView.findViewById<TextView>(R.id.save_route_name_button)
+        val inputField =
+            dialogView.findViewById<TextView>(R.id.route_name_field)
+
+
+        closeButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        saveButton.setOnClickListener {
+            if (inputField.text.trim().isNotEmpty()) {
+                val routeName =
+                    inputField.text
+                        .trim()
+                        .toString()
+                        .lowercase(Locale.ROOT)
+                        .replaceFirstChar {
+                            it.uppercaseChar()
+                        }
+                viewModel.selectRouteName(routeName)
+                viewModel.changeRouteStatus(RouteStates.RouteStarted)
+                dialog.dismiss()
+            } else {
+                Toast.makeText(
+                    requireContext(),
+                    "Route name could not be empty",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
+        dialog.setContentView(dialogView)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.show()
     }
 
     override fun onStop() {
@@ -288,27 +367,6 @@ class MapsFragment : Fragment() {
         }
     }
 
-    private fun checkPermissions() {
-        val allGranted = REQUIRED_PERMISSIONS.all { permission ->
-            ContextCompat.checkSelfPermission(
-                requireContext(),
-                permission
-            ) == PackageManager.PERMISSION_GRANTED
-        }
-        if (allGranted) {
-            val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
-            mapFragment?.getMapAsync(onMapReadyCallback)
-            Log.d(TAG, "ALL PERMISSIONS ARE GRANTED. 1")
-//            setMapSettings()
-//            setLocationSource()
-        } else {
-            if (shouldShowRequestPermissionRationale(REQUIRED_PERMISSIONS[0])) {
-                createAlertDialog()
-            } else {
-                launcher.launch(REQUIRED_PERMISSIONS)
-            }
-        }
-    }
 
     private fun getInfoWindowAdapter(): GoogleMap.InfoWindowAdapter {
         return object : GoogleMap.InfoWindowAdapter {
@@ -422,22 +480,6 @@ class MapsFragment : Fragment() {
         })
     }
 
-    private fun createAlertDialog() {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Location permission dialog")
-            .setMessage("To provide you better experience, please accept location permission")
-            .setPositiveButton("OK", DialogInterface.OnClickListener { _, _ ->
-                launcher.launch(REQUIRED_PERMISSIONS)
-            })
-            .setNegativeButton("Cancel", DialogInterface.OnClickListener { dialog, _ ->
-                dialog.dismiss()
-                requireActivity().onBackPressedDispatcher.onBackPressed()
-            })
-            .create()
-            .show()
-    }
-
-
     @SuppressLint("MissingInflatedId")
     private fun createObjectInfoDialog() {
 
@@ -512,18 +554,20 @@ class MapsFragment : Fragment() {
         popupWindow.show(requireActivity().supportFragmentManager, "POP_UP")
     }
 
+    private fun sendCommandToService(action: String) {
+        Intent(requireContext(), LocationService::class.java).also {
+            it.action = action
+            requireContext().startService(it)
+        }
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
     }
 
     companion object {
-        fun newInstance() = MapsFragment()
         private const val INTERESTING_PLACES = "interesting_places"
-        private val REQUIRED_PERMISSIONS: Array<String> = buildList {
-            add(Manifest.permission.ACCESS_COARSE_LOCATION)
-            add(Manifest.permission.ACCESS_FINE_LOCATION)
-        }.toTypedArray()
     }
 
 }

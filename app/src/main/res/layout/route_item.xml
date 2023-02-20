@@ -8,6 +8,20 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/route_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/route_name"
+        android:textSize="12sp"
+        android:textAlignment="center"
+        android:textAppearance="@style/customTextStyleLarge"
+        app:layout_constraintEnd_toEndOf="@id/cardView"
+        app:layout_constraintStart_toStartOf="@id/cardView"
+        app:layout_constraintTop_toTopOf="parent"
+        />
+
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardView"
         android:layout_width="0dp"
@@ -18,7 +32,7 @@
         app:cardElevation="-3dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/route_name"
         app:layout_constraintHorizontal_bias="0"
         app:strokeColor="@color/myOrange"
         app:strokeWidth="1dp"
@@ -53,21 +67,6 @@
         app:layout_constraintBottom_toBottomOf="@id/cardView"
         app:layout_constraintEnd_toEndOf="@id/cardView"
         app:layout_constraintHorizontal_bias="0.1"
-        app:layout_constraintStart_toStartOf="@id/cardView"
-        app:layout_constraintTop_toTopOf="@id/cardView"
-        app:layout_constraintVertical_bias="0.9" />
-
-    <androidx.appcompat.widget.AppCompatTextView
-        android:id="@+id/route_name"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/route_name"
-        android:textSize="12sp"
-        android:textAlignment="center"
-        android:textColor="@color/white"
-        app:layout_constraintBottom_toBottomOf="@id/cardView"
-        app:layout_constraintEnd_toEndOf="@id/cardView"
-        app:layout_constraintHorizontal_bias="0.9"
         app:layout_constraintStart_toStartOf="@id/cardView"
         app:layout_constraintTop_toTopOf="@id/cardView"
         app:layout_constraintVertical_bias="0.9" />

@@ -1,6 +1,7 @@
 package com.example.permissionsapp.ui.main
 
 
+import android.content.Intent
 import android.content.res.ColorStateList
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -11,6 +12,7 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
+import com.example.permissionsapp.presentation.utility.Constants
 import com.example.tourismApp.R
 import com.example.tourismApp.databinding.ActivityMainBinding
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -29,6 +31,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -38,7 +41,7 @@ class MainActivity : AppCompatActivity() {
         navigationView = binding.bottomNavView
         navigationView.background = null
 
-
+        //set navHostFragment and navController
         val navHostFragment =
             supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         navController = navHostFragment.navController
@@ -64,12 +67,26 @@ class MainActivity : AppCompatActivity() {
             }
             true
         }
+
+        //Navigate to maps fragment by click on location notification
+        navigateToMapsIfNeeded(intent)
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        //Navigate to maps fragment by click on location notification
+        navigateToMapsIfNeeded(intent)
+    }
+
+    private fun navigateToMapsIfNeeded(intent: Intent?) {
+        if (intent?.action == Constants.ACTION_SHOW_MAPS_FRAGMENT) {
+            navController.navigate(R.id.action_global_mapsFragment)
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean {
         return navController.navigateUp(appBarConfiguration)
                 || super.onSupportNavigateUp()
     }
-
 }
 

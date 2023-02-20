@@ -18,5 +18,7 @@ data class PhotoData @Inject constructor(
     @ColumnInfo
     val latitude: Double,
     @ColumnInfo
-    val longitude: Double
+    val longitude: Double,
+    @ColumnInfo
+    val routeName: String
         )

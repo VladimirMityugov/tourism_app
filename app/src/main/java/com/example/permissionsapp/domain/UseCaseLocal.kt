@@ -28,8 +28,12 @@ class UseCaseLocal @Inject constructor(
     }
 
 
-    fun getPhotos(): Flow<List<PhotoData>> {
-        return repositoryLocal.getPhotosFromDb()
+    suspend fun getPhotosByRouteName(routeName: String): List<PhotoData> {
+        return repositoryLocal.getPhotosByRouteName(routeName)
+    }
+
+    fun getRoutesFromDb(): Flow<List<PhotoData>> {
+        return repositoryLocal.getRoutesFromDb()
     }
 
     suspend fun insertPhotos(photoData: PhotoData) {

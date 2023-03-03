@@ -1,6 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.PermissionsApp" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+    <style name="Theme.TourismApp" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/myGrey</item>
         <item name="colorPrimaryVariant">@color/myOrange</item>
@@ -50,12 +50,5 @@
         <item name="android:background">@drawable/bottom_sheet_dialog_background</item>
     </style>
 
-    <style name="customRadioButton" parent="Widget.AppCompat.CompoundButton.RadioButton">
-        <item name="android:button">@drawable/checkbox_background</item>
-        <item name="android:textColor">@color/myOrange</item>
-        <item name="android:textStyle">normal</item>
-        <item name="android:paddingLeft">16dp</item>
-        <item name="android:textSize">14sp</item>
-    </style>
 
 </resources>

@@ -19,7 +19,6 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
-import androidx.appcompat.widget.AppCompatButton
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.content.ContextCompat
@@ -33,8 +32,12 @@ import com.example.permissionsapp.presentation.MyViewModel
 import com.example.permissionsapp.presentation.utility.Constants.ACTION_START
 import com.example.permissionsapp.presentation.utility.Constants.ACTION_STOP
 import com.example.permissionsapp.presentation.services.LocationService
+import com.example.permissionsapp.presentation.services.Polyline
 import com.example.permissionsapp.presentation.utility.Constants.ACTION_PAUSE
+import com.example.permissionsapp.presentation.utility.Constants.CAMERA_ZOOM_VALUE
 import com.example.permissionsapp.presentation.utility.Constants.INTERVAL_FOR_LOCATION_UPDATES
+import com.example.permissionsapp.presentation.utility.Constants.POLYLINE_COLOR
+import com.example.permissionsapp.presentation.utility.Constants.POLYLINE_WIDTH
 import com.example.permissionsapp.presentation.utility.MyLocation
 import com.example.permissionsapp.presentation.utility.RouteStates
 import com.example.permissionsapp.presentation.utility.hasLocationPermission
@@ -45,6 +48,7 @@ import com.google.android.gms.maps.model.*
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import java.util.*
+
 
 private const val TAG = "MAP_FRAGMENT"
 
@@ -63,13 +67,18 @@ class MapsFragment : Fragment() {
     private lateinit var takePhotoButton: AppCompatImageButton
     private lateinit var startRouteButton: AppCompatImageButton
     private lateinit var stopRouteButton: AppCompatImageButton
-    private var routeIsStarted: Boolean = false
-
     private var needAnimateCamera = true
     private var myLocation = MyLocation(0.0, 0.0)
     private val markers = mutableMapOf<String, String>()
     private var locationSourceListener: LocationSource.OnLocationChangedListener? = null
     private var map: GoogleMap? = null
+
+    private var routeIsStarted: Boolean = false
+//    private var routePath = listOf<LatLng?>()
+//    private var idlePath = listOf<LatLng>()
+
+    private var pathPoints = mutableListOf<Polyline>()
+
 
     private val viewModel: MyViewModel by activityViewModels()
 
@@ -77,27 +86,22 @@ class MapsFragment : Fragment() {
         map = it
         setMapStyle()
         setMapSettings()
-        setLocationSource()
+//        setLocationSource()
+        Log.d(TAG, "MAP IS CALLED")
+//        drawAllRoutePolyline()
+//        drawAllIdlePolyline()
 
-//        map!!.setOnCameraMoveListener{
-//            viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-//                val location = DefaultLocationClient(requireContext(), fusedClient).getLocationUpdates(5000)
-//                Log.d(TAG, "Location is : $location ")
-//            }
-//        }
+        addAllPolylines()
 
         map!!.setOnMarkerClickListener { marker ->
             val xid = markers[marker.id]
-            Log.d(TAG, "Object xid is : $xid")
             if (xid != null) {
                 viewModel.selectObject(xid)
                 viewLifecycleOwner.lifecycleScope.launchWhenStarted {
                     viewModel.allObjects.collectLatest { allObjects ->
-                        Log.d(TAG, "All objects: $allObjects")
                         viewModel.getObjectInfoById(xid, allObjects)
                     }
                 }
-
                 viewLifecycleOwner.lifecycleScope.launchWhenStarted {
                     viewModel.isAddedToDb.collectLatest { isAdded ->
                         viewModel.placesInfo.collectLatest { placeInfo ->
@@ -112,11 +116,10 @@ class MapsFragment : Fragment() {
                     }
                 }
 
-
-                Log.d(TAG, "Object is selected. Info is requested")
             }
+
             val latLng = LatLng(marker.position.latitude, marker.position.longitude)
-            cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 15f)
+            cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, CAMERA_ZOOM_VALUE)
             map!!.animateCamera(cameraUpdate)
             marker.showInfoWindow()
             true
@@ -133,7 +136,7 @@ class MapsFragment : Fragment() {
 
         map!!.setOnMyLocationButtonClickListener {
             val latLng = LatLng(myLocation.latitude, myLocation.longitude)
-            cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 15f)
+            cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, CAMERA_ZOOM_VALUE)
             map!!.animateCamera(cameraUpdate)
             true
         }
@@ -164,9 +167,41 @@ class MapsFragment : Fragment() {
         startRouteButton = binding.startRouteButton
         stopRouteButton = binding.stopRouteButton
 
+        viewModel.getAllRoutes()
+
         takePhotoButton.setOnClickListener {
             findNavController().navigate(R.id.action_maps_to_photoFragment)
         }
+
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            LocationService.isTracking.collectLatest { isTracking ->
+                Log.d(TAG, "IS TRACKING: $isTracking")
+                routeIsStarted = isTracking
+                if (isTracking) {
+
+                    LocationService.pathPoints.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
+                        pathPoints = it
+                        addLatestPolyline()
+                        moveCameraToUser()
+                    })
+
+//                    LocationService.routePath.collectLatest {
+//                        Log.d(TAG, "PATH IS : $it")
+//                        routePath = it
+//                        drawRoutePolyline()
+////                        drawAllRoutePolyline()
+//                        moveCameraToUser()
+                    }
+                }
+//            else {
+//                    LocationService.idlePath.collectLatest {
+//                        Log.d(TAG, "IDLE IS : $it")
+////                        idlePath = it
+////                        drawIdlePolyline()
+//                    }
+                }
+
+
 
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             viewModel.hideAllPlaces.collectLatest {
@@ -214,30 +249,19 @@ class MapsFragment : Fragment() {
         }
 
         startRouteButton.setOnClickListener {
-            viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-                viewModel.routeName.collectLatest { routeName ->
-                    if (routeName == null) {
-                        createRouteNameAlertDialog()
-                    } else {
-                        if (!routeIsStarted) {
-                            Log.d(TAG, "Route is not started")
-                            routeIsStarted = true
-                            viewModel.changeRouteStatus(RouteStates.RouteStarted)
-                            sendCommandToService(ACTION_START)
-                        } else {
-                            Log.d(TAG, "Route is started")
-                            routeIsStarted = false
-                            viewModel.changeRouteStatus(RouteStates.RoutePaused)
-                            sendCommandToService(ACTION_PAUSE)
-                        }
-                    }
+            if (viewModel.routeName.value != null) {
+                if (!routeIsStarted) {
+                    startRoute()
+                } else {
+                    pauseRoute()
                 }
+            } else {
+                createRouteNameAlertDialog()
             }
         }
 
         stopRouteButton.setOnClickListener {
-            viewModel.changeRouteStatus(RouteStates.RouteStopped)
-            sendCommandToService(ACTION_STOP)
+            stopRoute()
         }
 
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
@@ -285,6 +309,7 @@ class MapsFragment : Fragment() {
 
     }
 
+
     private fun createRouteNameAlertDialog() {
 
         val dialog = Dialog(requireContext())
@@ -299,28 +324,44 @@ class MapsFragment : Fragment() {
             dialog.dismiss()
         }
 
+
+        //Start route, save route info to DB
         saveButton.setOnClickListener {
-            if (inputField.text.trim().isNotEmpty()) {
-                val routeName =
-                    inputField.text
+            viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+                viewModel.allRoutes.collectLatest { routes ->
+                    val newRouteName = inputField.text
                         .trim()
                         .toString()
                         .lowercase(Locale.ROOT)
                         .replaceFirstChar {
                             it.uppercaseChar()
                         }
-                viewModel.selectRouteName(routeName)
-                viewModel.changeRouteStatus(RouteStates.RouteStarted)
-                dialog.dismiss()
-            } else {
-                Toast.makeText(
-                    requireContext(),
-                    "Route name could not be empty",
-                    Toast.LENGTH_SHORT
-                ).show()
+                    val routeExists = routes.find { it.route_name == newRouteName }
+                    if (newRouteName.isNotEmpty()) {
+                        if (routeExists == null) {
+                            viewModel.selectRouteName(newRouteName)
+                            viewModel.insertRoute(
+                                routeName = newRouteName
+                            )
+                            startRoute()
+                            dialog.dismiss()
+                        } else {
+                            Toast.makeText(
+                                requireContext(),
+                                "Route with this name already exists",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    } else {
+                        Toast.makeText(
+                            requireContext(),
+                            "Route name could not be empty",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
             }
         }
-
         dialog.setContentView(dialogView)
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         dialog.show()
@@ -329,6 +370,26 @@ class MapsFragment : Fragment() {
     override fun onStop() {
         super.onStop()
         needAnimateCamera = false
+    }
+
+    private fun startRoute() {
+        viewModel.changeRouteStatus(RouteStates.RouteStarted)
+        sendCommandToService(ACTION_START)
+    }
+
+    private fun pauseRoute() {
+        viewModel.changeRouteStatus(RouteStates.RoutePaused)
+        sendCommandToService(ACTION_PAUSE)
+    }
+
+    private fun stopRoute() {
+        viewModel.changeRouteStatus(RouteStates.RouteStopped)
+        sendCommandToService(ACTION_STOP)
+        viewModel.selectRouteName(null)
+        val currentRouteName = viewModel.routeName.value
+        if (currentRouteName != null) {
+            viewModel.updateRouteEndDate(currentRouteName)
+        }
     }
 
     private fun showPlaces(location: Location) {
@@ -423,10 +484,9 @@ class MapsFragment : Fragment() {
                         R.drawable.current_location_icon
                     )
                 )
-                .title("It`s my location")
         )!!
         cameraUpdate = CameraUpdateFactory.newLatLngZoom(
-            latLng, 15f
+            latLng, CAMERA_ZOOM_VALUE
         )
         if (needAnimateCamera) {
             map?.moveCamera(cameraUpdate)
@@ -558,6 +618,99 @@ class MapsFragment : Fragment() {
         Intent(requireContext(), LocationService::class.java).also {
             it.action = action
             requireContext().startService(it)
+        }
+    }
+
+//    private fun drawRoutePolyline() {
+//        if (routePath.size > 2) {
+//            val lastLatLng = routePath.last()
+//            val preLastLatLng = routePath[routePath.size - 2]
+//            if (lastLatLng != null) {
+//                val polylineOptions = PolylineOptions()
+//                    .color(POLYLINE_COLOR)
+//                    .width(POLYLINE_WIDTH)
+//                    .add(preLastLatLng)
+//                    .add(lastLatLng)
+//                map?.addPolyline(polylineOptions)
+//                Log.d(TAG, "DRAW ROUTE POLYLINE for route $routePath")
+//            }
+//        }
+//    }
+//
+//    private fun drawIdlePolyline() {
+//        Log.d(TAG, "DRAW IDLE POLYLINE for route $idlePath")
+//        if (idlePath.size > 1) {
+//            val preLastLatLng = idlePath[idlePath.size - 2]
+//            val lastLatLng = idlePath[idlePath.size - 1]
+//            val polylineOptions = PolylineOptions()
+//                .color(POLYLINE_IDLE_COLOR)
+//                .width(POLYLINE_IDLE_WIDTH)
+//                .addAll(idlePath)
+//            map?.addPolyline(polylineOptions)
+//        }
+//    }
+
+//    private fun drawAllRoutePolyline() {
+//        for (polyline in routePath) {
+//            polylineOptions
+//                .addAll(polyline)
+//            map?.addPolyline(polylineOptions)
+//        }
+//    }
+
+//    private fun drawAllIdlePolyline() {
+//        for (idle in idlePath) {
+//            val polylineOptions = PolylineOptions()
+//                .color(POLYLINE_COLOR)
+//                .width(POLYLINE_WIDTH)
+//                .addAll(listOf(idle))
+//            map?.addPolyline(polylineOptions)
+//        }
+//    }
+//
+//
+//    private fun moveCameraToUser() {
+//        Log.d(TAG, "MOVE CAMERA for route $routePath")
+//        if (routePath.size > 1 && routePath.last() != null) {
+//            cameraUpdate =
+//                CameraUpdateFactory.newLatLngZoom(routePath.last()!!, CAMERA_ZOOM_VALUE)
+//            map?.animateCamera(
+//                cameraUpdate
+//            )
+//        }
+//    }
+
+    private fun addLatestPolyline() {
+        if(pathPoints.isNotEmpty() && pathPoints.last().size > 1) {
+            val preLastLatLng = pathPoints.last()[pathPoints.last().size - 2]
+            val lastLatLng = pathPoints.last().last()
+            val polylineOptions = PolylineOptions()
+                .color(POLYLINE_COLOR)
+                .width(POLYLINE_WIDTH)
+                .add(preLastLatLng)
+                .add(lastLatLng)
+            map?.addPolyline(polylineOptions)
+        }
+    }
+
+    private fun addAllPolylines() {
+        for(polyline in pathPoints) {
+            val polylineOptions = PolylineOptions()
+                .color(POLYLINE_COLOR)
+                .width(POLYLINE_WIDTH)
+                .addAll(polyline)
+            map?.addPolyline(polylineOptions)
+        }
+    }
+
+    private fun moveCameraToUser() {
+        if(pathPoints.isNotEmpty() && pathPoints.last().isNotEmpty()) {
+            map?.animateCamera(
+                CameraUpdateFactory.newLatLngZoom(
+                    pathPoints.last().last(),
+                    CAMERA_ZOOM_VALUE
+                )
+            )
         }
     }
 

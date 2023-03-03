@@ -44,7 +44,7 @@ import java.util.*
 
 
 private const val TAG = "PHOTO_FRAGMENT"
-private const val DATE_FORMAT = "yyyy-MM-dd hh:mm:ss"
+
 
 @AndroidEntryPoint
 class PhotoFragment : Fragment() {
@@ -105,6 +105,14 @@ class PhotoFragment : Fragment() {
         }
 
         galleryButton.setOnClickListener {
+            viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+                viewModel.routeName.collectLatest { routeName ->
+                    if (routeName != null) {
+                        viewModel.getPhotosByRouteName(routeName)
+                    }
+                }
+            }
+
             findNavController().navigate(R.id.action_photoFragment_to_routeFragment)
         }
 
@@ -297,6 +305,7 @@ class PhotoFragment : Fragment() {
                 add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             }
         }.toTypedArray()
+        private const val DATE_FORMAT = "yyyy-MM-dd hh:mm:ss"
     }
 
 }

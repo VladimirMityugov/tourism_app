@@ -32,7 +32,7 @@ object AppModule {
 
     @Provides
     @ViewModelScoped
-    fun providePhotoDao(dataBase: MyDataBase) = dataBase.dao
+    fun providePhotoDao(dataBase: MyDataBase) = dataBase.photoDao
 
     @Provides
     @ViewModelScoped
@@ -41,6 +41,10 @@ object AppModule {
     @Provides
     @ViewModelScoped
     fun providePlacesKindsDao(dataBase: MyDataBase) = dataBase.placesKindsDao
+
+    @Provides
+    @ViewModelScoped
+    fun provideRouteDataDao(dataBase: MyDataBase) = dataBase.routeDao
 
     @Provides
     @ViewModelScoped

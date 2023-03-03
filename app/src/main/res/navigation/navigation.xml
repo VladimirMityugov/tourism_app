@@ -89,6 +89,11 @@
             app:destination="@id/collectionGalleryFragment"
             app:enterAnim="@anim/fui_slide_in_right"
             app:exitAnim="@anim/fui_slide_out_left" />
+        <action
+            android:id="@+id/action_routeFragment_to_singlePhotoFragment"
+            app:destination="@id/singlePhotoFragment"
+            app:enterAnim="@anim/fui_slide_in_right"
+            app:exitAnim="@anim/fui_slide_out_left"/>
     </fragment>
     <fragment
         android:id="@+id/collectionGalleryFragment"

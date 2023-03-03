@@ -1,21 +1,31 @@
 package com.example.permissionsapp.presentation
 
 import android.location.Location
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.permissionsapp.data.local.entities.ObjectInfo
 import com.example.permissionsapp.data.local.entities.PhotoData
 import com.example.permissionsapp.data.local.entities.PlacesForSearch
+import com.example.permissionsapp.data.local.entities.RouteData
 import com.example.permissionsapp.data.remote.places_dto.Places
 import com.example.permissionsapp.data.remote.places_info_dto.PlaceInfo
-import com.example.permissionsapp.domain.UseCaseLocal
+import com.example.permissionsapp.domain.use_case_local.UseCasePhotoLocal
 import com.example.permissionsapp.domain.UseCaseRemote
+import com.example.permissionsapp.domain.use_case_local.UseCaseObjectLocal
+import com.example.permissionsapp.domain.use_case_local.UseCasePlacesLocal
+import com.example.permissionsapp.domain.use_case_local.UseCaseRouteLocal
 import com.example.permissionsapp.presentation.utility.DefaultLocationClient
 import com.example.permissionsapp.presentation.utility.RouteStates
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.text.DateFormat
+import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
 
@@ -25,7 +35,10 @@ private const val TAG = "VIEW_MODEL"
 @HiltViewModel
 class MyViewModel @Inject constructor(
     private val useCaseRemote: UseCaseRemote,
-    private val useCaseLocal: UseCaseLocal,
+    private val useCasePhotoLocal: UseCasePhotoLocal,
+    private val useCaseObjectLocal: UseCaseObjectLocal,
+    private val useCasePlacesLocal: UseCasePlacesLocal,
+    private val useCaseRouteLocal: UseCaseRouteLocal,
     private val locationClient: DefaultLocationClient
 ) : ViewModel() {
 
@@ -46,9 +59,6 @@ class MyViewModel @Inject constructor(
 
     private val _isAddedToDb = MutableStateFlow(false)
     val isAddedToDb = _isAddedToDb.asStateFlow()
-
-    private val _photos = MutableStateFlow<List<PhotoData>>(emptyList())
-    val photos = _photos.asStateFlow()
 
     private val _isEmailEntered = MutableStateFlow(false)
     val isEmailEntered = _isEmailEntered.asStateFlow()
@@ -82,8 +92,17 @@ class MyViewModel @Inject constructor(
     private val _routeName = MutableStateFlow<String?>(null)
     val routeName = _routeName.asStateFlow()
 
+    private val _allRoutes = MutableStateFlow<List<RouteData>>(emptyList())
+    val allRoutes = _allRoutes.asStateFlow()
+
     private val _routeStatus = MutableStateFlow<RouteStates>(RouteStates.RouteStopped)
     val routeStatus = _routeStatus.asStateFlow()
+
+    private val _isPhoto = MutableStateFlow<Boolean?>(null)
+    val isPhoto = _isPhoto.asStateFlow()
+
+    private val _isRoute = MutableStateFlow<Boolean?>(null)
+    val isRoute = _isRoute.asStateFlow()
 
     fun selectItem(uri: String) {
         _selectedItem.value = uri
@@ -96,15 +115,14 @@ class MyViewModel @Inject constructor(
     }
 
 
-    //PhotoActivity
-    fun getRoutesList(): Flow<List<PhotoData>> = useCaseLocal.getRoutesFromDb().map { it -> it.distinctBy { it.routeName } }
+    //Photo
+    fun getRoutesList(): Flow<List<PhotoData>> =
+        useCasePhotoLocal.getAllRoutesPhotosFromDb().map { it -> it.distinctBy { it.routeName } }
 
-    fun getPhotosByRouteName(routeName: String) {
-        viewModelScope.launch {
-            _photos.value = useCaseLocal.getPhotosByRouteName(routeName)
-        }
-    }
-    fun selectRouteName(routeName: String) {
+    fun getPhotosByRouteName(routeName: String): Flow<List<PhotoData>> = useCasePhotoLocal.getPhotosByRouteName(routeName)
+
+
+    fun selectRouteName(routeName: String?) {
         _routeName.value = routeName
     }
 
@@ -117,7 +135,7 @@ class MyViewModel @Inject constructor(
         routeName: String
     ) {
         viewModelScope.launch {
-            useCaseLocal.insertPhotos(
+            useCasePhotoLocal.insertPhotosToDb(
                 photoData = PhotoData(
                     pic_src = uri,
                     date = date,
@@ -132,23 +150,131 @@ class MyViewModel @Inject constructor(
 
     fun addPhotoDescription(description: String?, uri: String) {
         viewModelScope.launch {
-            useCaseLocal.addPhotoDescription(descriptionText = description, uri = uri)
+            useCasePhotoLocal.addPhotoDescription(descriptionText = description, uri = uri)
         }
     }
 
     fun deletePhoto(uri: String) {
         viewModelScope.launch {
-            useCaseLocal.deletePhoto(uri)
+            useCasePhotoLocal.deletePhotoFromDb(uri)
         }
     }
 
+    fun deletePhotosByRouteName(routeName: String) {
+        viewModelScope.launch {
+            useCasePhotoLocal.deletePhotosByRouteName(routeName)
+        }
+    }
 
-    //SearchSettings
-    fun getPlacesKinds(): Flow<List<PlacesForSearch>> = useCaseLocal.getPlacesKindsFromDb()
+    fun switchPhotoSelected(isPhoto: Boolean){
+        _isPhoto.value = isPhoto
+    }
+
+    //Routes
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun insertRoute(routeName: String) {
+        viewModelScope.launch {
+            useCaseRouteLocal.insertRoute(
+                routeData = RouteData(
+                    route_name = routeName,
+                    route_description = null,
+                    start_date = getCurrentDate(),
+                    end_date = getCurrentDate()
+                )
+            )
+        }
+    }
+
+    fun getAllRoutes() {
+        viewModelScope.launch {
+            _allRoutes.value = useCaseRouteLocal.getAllRoutes()
+        }
+    }
+
+    fun getRouteInfoByName(routeName: String) = useCaseRouteLocal.getRouteByName(routeName)
+
+    fun deleteRouteByName(routeName: String) {
+        viewModelScope.launch {
+            useCaseRouteLocal.deleteRouteByName(routeName)
+        }
+    }
+
+    fun addRouteDescription(routeDescription: String, routeName: String) {
+        viewModelScope.launch {
+            useCaseRouteLocal.addRouteDescription(routeDescription, routeName)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun updateRouteEndDate(routeName: String) {
+        viewModelScope.launch {
+            useCaseRouteLocal.updateRouteEndDate(
+                endDate = getCurrentDate(),
+                routeName = routeName)
+        }
+    }
+
+    fun switchRouteSelected(isRoute: Boolean){
+        _isRoute.value = isRoute
+    }
+
+    //Objects
+    private fun getPlaceInfo(xid: String) {
+        viewModelScope.launch {
+            _placesInfo.value = useCaseRemote.getPlaceInfo(
+                language = getLanguage(),
+                xid = xid
+            )
+        }
+    }
+
+    fun selectObject(xid: String) {
+        viewModelScope.launch {
+            _objectSelected.value = xid
+        }
+    }
+
+    val allObjects = useCaseObjectLocal.getAllObjectsFromDb()
+
+    fun getObjectInfoById(xid: String, allObjects: List<ObjectInfo>) {
+        viewModelScope.launch {
+            if (allObjects.all { it.xid != xid }) {
+                getPlaceInfo(xid)
+                _isAddedToDb.value = false
+                Log.d(TAG, "Object with id $xid is not in DB")
+            } else {
+                _objectInfo.value = useCaseObjectLocal.getObjectByIdInfoFromDb(xid)
+                _isAddedToDb.value = true
+                Log.d(TAG, "Object with id $xid is in DB")
+            }
+        }
+    }
+
+    fun saveObjectsToDB(placeInfo: PlaceInfo) {
+        viewModelScope.launch {
+            useCaseObjectLocal.insertObjectInfoToDb(
+                objectInfo = ObjectInfo(
+                    xid = placeInfo.xid,
+                    name = placeInfo.name,
+                    country_code = placeInfo.address?.country_code,
+                    house_number = placeInfo.address?.house_number,
+                    postcode = placeInfo.address?.postcode,
+                    road = placeInfo.address?.road,
+                    description = placeInfo.info?.descr,
+                    image = placeInfo.image
+                )
+            )
+            Log.d(TAG, "Object with id ${placeInfo.xid} has been saved to DB")
+            _objectInfo.value = useCaseObjectLocal.getObjectByIdInfoFromDb(placeInfo.xid)
+        }
+    }
+
+    //Places
+    fun getPlacesKinds(): Flow<List<PlacesForSearch>> = useCasePlacesLocal.getPlacesKindsFromDb()
 
     private fun insertPlacesKindsToDb(placeKind: String) {
         viewModelScope.launch {
-            useCaseLocal.insertPlacesKindsToDb(
+            useCasePlacesLocal.insertPlacesKindsToDb(
                 placesForSearch = PlacesForSearch(
                     kind = placeKind
                 )
@@ -159,14 +285,14 @@ class MyViewModel @Inject constructor(
 
     private fun deletePlaceKindFromDb(placeKind: String) {
         viewModelScope.launch {
-            useCaseLocal.deletePlaceKindFromDb(placeKind = placeKind)
+            useCasePlacesLocal.deletePlaceKindFromDb(placeKind = placeKind)
             Log.d(TAG, "Place $placeKind has been deleted from DB")
         }
     }
 
     fun deleteAllPlacesKinds() {
         viewModelScope.launch {
-            useCaseLocal.deleteAllPlacesKinds()
+            useCasePlacesLocal.deleteAllPlacesKinds()
         }
     }
 
@@ -316,61 +442,15 @@ class MyViewModel @Inject constructor(
     }
 
 
-    //PlaceInfo
-    private fun getPlaceInfo(xid: String) {
-        viewModelScope.launch {
-            _placesInfo.value = useCaseRemote.getPlaceInfo(
-                language = getLanguage(),
-                xid = xid
-            )
-        }
-    }
-
-    fun selectObject(xid: String) {
-        viewModelScope.launch {
-            _objectSelected.value = xid
-        }
-    }
-
-    val allObjects = useCaseLocal.getAllObjectInfo()
-
-    fun getObjectInfoById(xid: String, allObjects: List<ObjectInfo>) {
-        viewModelScope.launch {
-            if (allObjects.all { it.xid != xid }) {
-                getPlaceInfo(xid)
-                _isAddedToDb.value = false
-                Log.d(TAG, "Object with id $xid is not in DB")
-            } else {
-                _objectInfo.value = useCaseLocal.getObjectByIdInfo(xid)
-                _isAddedToDb.value = true
-                Log.d(TAG, "Object with id $xid is in DB")
-            }
-        }
-    }
-
-    fun saveObjectsToDB(placeInfo: PlaceInfo) {
-        viewModelScope.launch {
-            useCaseLocal.insertObjectInfo(
-                objectInfo = ObjectInfo(
-                    xid = placeInfo.xid,
-                    name = placeInfo.name,
-                    country_code = placeInfo.address?.country_code,
-                    house_number = placeInfo.address?.house_number,
-                    postcode = placeInfo.address?.postcode,
-                    road = placeInfo.address?.road,
-                    description = placeInfo.info?.descr,
-                    image = placeInfo.image
-                )
-            )
-            Log.d(TAG, "Object with id ${placeInfo.xid} has been saved to DB")
-            _objectInfo.value = useCaseLocal.getObjectByIdInfo(placeInfo.xid)
-        }
-    }
-
     //Auxiliary
     private fun getLanguage(): String {
         return if (Locale.getDefault() == Locale("ru", "RU")) RU
         else EN
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun getCurrentDate(): String {
+        return SimpleDateFormat(DATE_FORMAT, Locale.getDefault()).format(System.currentTimeMillis())
     }
 
 
@@ -382,6 +462,7 @@ class MyViewModel @Inject constructor(
         private const val BANKS = "banks"
         private const val SHOPS = "shops"
         private const val TRANSPORT = "transport"
+        private const val DATE_FORMAT = "yyyy-MM-dd hh:mm:ss"
     }
 }
 

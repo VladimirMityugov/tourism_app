@@ -54,7 +54,7 @@ class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
     private lateinit var scrollView: ScrollView
 
     private val routesAdapter = RoutesAdapter(
-        onItemClick = {route -> onRouteClick(route)}
+        onItemClick = { route -> onRouteClick(route) }
     )
 
     private val viewModel: MyViewModel by activityViewModels()
@@ -89,14 +89,14 @@ class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
 
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             viewModel.getRoutesList().collectLatest {
-                if(it.isNotEmpty()){
+                if (it.isNotEmpty()) {
                     routesRecyclerView.visibility = View.VISIBLE
                     scrollView.visibility = View.VISIBLE
                     infoField.visibility = View.INVISIBLE
                     firstRouteButton.visibility = View.INVISIBLE
                     Log.d(TAG, "routes are : $it")
                     routesAdapter.submitList(it)
-                }else{
+                } else {
                     routesRecyclerView.visibility = View.GONE
                     scrollView.visibility = View.GONE
                     infoField.visibility = View.VISIBLE
@@ -146,7 +146,7 @@ class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
     }
 
 
-    private fun onRouteClick(route: PhotoData){
+    private fun onRouteClick(route: PhotoData) {
         viewModel.selectRouteName(route.routeName)
         viewModel.getPhotosByRouteName(route.routeName)
         findNavController().navigate(R.id.action_main_to_routeFragment)

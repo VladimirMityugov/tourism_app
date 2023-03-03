@@ -89,7 +89,7 @@ class CollectionGalleryFragment : Fragment() {
 
 
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-                viewModel.photos.collectLatest { photoList ->
+                viewModel.getPhotosByRouteName(viewModel.routeName.value.toString()).collectLatest { photoList ->
                     viewModel.selectedItem.collectLatest { uri ->
                         galleryCollectionAdapter =
                             FragmentGalleryCollectionAdapter(

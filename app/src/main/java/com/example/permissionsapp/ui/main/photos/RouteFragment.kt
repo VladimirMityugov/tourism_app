@@ -8,10 +8,15 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.OnBackPressedDispatcher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.appcompat.widget.AppCompatButton
+import androidx.appcompat.widget.AppCompatEditText
+import androidx.appcompat.widget.AppCompatImageButton
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
@@ -22,6 +27,7 @@ import com.example.permissionsapp.presentation.MyViewModel
 import com.example.permissionsapp.presentation.PhotoAdapter
 import com.example.tourismApp.R
 import com.example.tourismApp.databinding.FragmentRouteBinding
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import java.time.LocalDate
@@ -54,9 +60,12 @@ class RouteFragment : Fragment() {
     private var _binding: FragmentRouteBinding? = null
     private val binding get() = _binding!!
 
-
     private lateinit var routeName: AppCompatTextView
     private lateinit var photosRecyclerView: RecyclerView
+    private lateinit var backButton: AppCompatImageButton
+    private lateinit var description: AppCompatTextView
+    private lateinit var addDescriptionButton: AppCompatImageButton
+    private lateinit var addDescriptionTitle: AppCompatTextView
 
     private val viewModel: MyViewModel by activityViewModels()
 
@@ -78,44 +87,60 @@ class RouteFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        checkPermissions()
 
+        backButton = binding.backButton
+        description = binding.description
         routeName = binding.routeName
+        addDescriptionButton = binding.addDescriptionButton
+        addDescriptionTitle = binding.addDescriptionTitle
         photosRecyclerView = binding.photosRecyclerView
 
         photosRecyclerView.adapter = photoAdapter
 
-
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-
+        addDescriptionButton.setOnClickListener {
+            onAddDescriptionClick()
         }
 
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.photos.collectLatest { photos ->
-                photoAdapter.submitList(photos)
-            }
+        addDescriptionTitle.setOnClickListener {
+            onAddDescriptionClick()
         }
+
+        backButton.setOnClickListener {
+            requireActivity().onBackPressedDispatcher.onBackPressed()
+        }
+
+        description.setTextColor(resources.getColor(R.color.myOrange, resources.newTheme()))
 
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             viewModel.routeName.collectLatest { name ->
-                Log.d(TAG, "route name is : $name")
-                routeName.text = name
+                if (name != null) {
+                    routeName.text = name
+                    viewModel.getRouteInfoByName(name).collectLatest { routeInfo ->
+                        val routeDescription =
+                            routeInfo.find { it.route_name == name }?.route_description
+                        Log.d(TAG, "DESCRIPTION IS : $routeDescription")
+                        if (routeDescription != null) {
+                            description.visibility = View.VISIBLE
+                            description.text = routeDescription
+                        } else {
+                            description.visibility = View.INVISIBLE
+                        }
+                    }
+
+                }
+
             }
         }
 
-    }
-
-    private fun moveToPhotoFragment() {
-//        requireActivity().supportFragmentManager.beginTransaction()
-//            .replace(R.id.fragmentLayout, PhotoFragment.newInstance())
-//            .addToBackStack("photo_list")
-//            .commit()
     }
 
     private fun onItemClick(item: PhotoData) {
         viewModel.selectItem(item.pic_src)
-        findNavController().navigate(R.id.action_routeFragment_to_collectionGalleryFragment)
+        findNavController().navigate(R.id.action_routeFragment_to_singlePhotoFragment)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun checkPermissions() {
         Log.d(TAG, "check permissions")
         val allGranted = REQUEST_PERMISSIONS.all { permission ->
@@ -124,20 +149,30 @@ class RouteFragment : Fragment() {
                 permission
             ) == PackageManager.PERMISSION_GRANTED
         }
-        if (allGranted) //
-        else launcher.launch(REQUEST_PERMISSIONS)
+        if (allGranted) {
+            viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+                viewModel.getPhotosByRouteName(viewModel.routeName.value.toString())
+                    .collectLatest { photos ->
+                        photoAdapter.submitList(photos)
+                    }
+            }
+        } else launcher.launch(REQUEST_PERMISSIONS)
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun onLongItemClick(item: PhotoData) {
-        val imageDate = item.date
-        val date = LocalDate.parse(
-            imageDate,
-            DateTimeFormatter.ofPattern(DATE_FORMAT, Locale.getDefault())
-        )
-        Log.d(TAG, "Image date: $date")
-        viewModel.deletePhoto(item.pic_src)
+        viewModel.selectItem(item.pic_src)
+        findNavController().navigate(R.id.action_routeFragment_to_collectionGalleryFragment)
     }
+
+    private fun onAddDescriptionClick() {
+        viewModel.switchRouteSelected(true)
+        val popupWindow = DescriptionFragment()
+        popupWindow.setStyle(DialogFragment.STYLE_NORMAL, R.style.BottomSheetDialogTheme)
+        popupWindow.enterTransition = com.google.android.material.R.id.animateToStart
+        popupWindow.exitTransition = com.google.android.material.R.id.animateToEnd
+        popupWindow.show(requireActivity().supportFragmentManager, "POP_UP")
+    }
+
 
     override fun onDestroyView() {
         super.onDestroyView()

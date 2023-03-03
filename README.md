@@ -2,15 +2,12 @@
 ### Make photos, attach them to your routes, share with friends. Available in English and Russian
 
 
-<details><summary>Authentification with Firebase Auth</summary>
-<p>
+**Authentification with Firebase Auth**
 
 <p align="left">
 <img src="https://user-images.githubusercontent.com/118269028/216836609-4057e575-52b2-4edb-8e18-530401779cc0.jpg" width=30% height=30%>
  </p>
 
-</p>
-</details>
 
 <details><summary>Make and store photos, add description</summary>
 <p>

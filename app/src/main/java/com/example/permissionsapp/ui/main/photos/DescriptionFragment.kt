@@ -1,8 +1,6 @@
 package com.example.permissionsapp.ui.main.photos
 
 import android.os.Bundle
-import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,14 +9,10 @@ import androidx.appcompat.widget.AppCompatEditText
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import com.example.permissionsapp.presentation.MyViewModel
-import com.example.tourismApp.R
 import com.example.tourismApp.databinding.FragmentDescriptionBinding
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.google.android.material.snackbar.Snackbar
-import hilt_aggregated_deps._com_example_permissionsapp_presentation_MyViewModel_HiltModules_BindsModule
 import kotlinx.coroutines.flow.collectLatest
 
-private const val TAG = "DESCRIPTION_FRAG"
 
 class DescriptionFragment : BottomSheetDialogFragment() {
 
@@ -53,12 +47,10 @@ class DescriptionFragment : BottomSheetDialogFragment() {
                     when {
                         isPhoto != null && isPhoto == true -> {
                             isRouteSelected = false
-                            Log.d(TAG, "IS PHOTO")
                             setPhotoDescription(routeName)
                         }
                         isRoute != null && isRoute == true -> {
                             isRouteSelected = true
-                            Log.d(TAG, "IS ROUTE")
                             setRouteDescription(routeName)
                         }
                     }
@@ -69,10 +61,8 @@ class DescriptionFragment : BottomSheetDialogFragment() {
         saveButton.setOnClickListener {
             val description = descriptionInputField.text.toString()
             if (isRouteSelected) {
-                Log.d(TAG, "IS ROUTE")
                 addRouteDescription(description, routeName)
             } else {
-                Log.d(TAG, "IS PHOTO")
                 addPhotoDescription(description)
             }
             dismiss()
@@ -85,7 +75,6 @@ class DescriptionFragment : BottomSheetDialogFragment() {
             viewModel.getRouteInfoByName(routeName).collectLatest { routeInfo ->
                 val routeDescription =
                     routeInfo.find { it.route_name == routeName }?.route_description
-                Log.d(TAG, "DESCRIPTION IS : $routeDescription")
                 if (routeDescription != null) {
                     descriptionInputField.setText(routeDescription)
                 }
@@ -98,8 +87,6 @@ class DescriptionFragment : BottomSheetDialogFragment() {
             viewModel.selectedItem.collectLatest { uri ->
                 viewModel.getPhotosByRouteName(routeName).collectLatest { photos ->
                     val photoDescription = photos.find { it.pic_src == uri }?.description
-                    Log.d(TAG, "DESCRIPTION IS : $photoDescription")
-                    Log.d(TAG, "URI IS : $uri")
                     if (photoDescription != null) {
                         descriptionInputField.setText(photoDescription)
                     }
@@ -126,7 +113,6 @@ class DescriptionFragment : BottomSheetDialogFragment() {
 
     override fun onDetach() {
         super.onDetach()
-        Log.d(TAG, "ON DETACH")
         viewModel.switchRouteSelected(false)
         viewModel.switchPhotoSelected(false)
         isRouteSelected = false
@@ -137,7 +123,4 @@ class DescriptionFragment : BottomSheetDialogFragment() {
         _binding = null
     }
 
-    companion object {
-
-    }
 }

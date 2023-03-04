@@ -30,27 +30,27 @@ import com.example.permissionsapp.ui.main.MainActivity
 import com.example.tourismApp.R
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
 private const val TAG = "LOCATION_SERVICE"
 typealias Polyline = MutableList<LatLng>
 typealias Polylines = MutableList<Polyline>
+
 class LocationService : Service() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private lateinit var locationClient: LocationClient
     private var isFirstLaunch = true
+    private var startTime = 0L
+    private var totalTime = 0L
+    private var lapTime = 0L
 
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
-        postInitialValues()
         locationClient = DefaultLocationClient(
             this,
             LocationServices.getFusedLocationProviderClient(this)
@@ -76,20 +76,30 @@ class LocationService : Service() {
     }
 
     private fun pause() {
-//        addEmptyCoordinates()
         is_tracking.value = false
     }
 
     private fun resume() {
+        addEmptyPolyline()
+        launchRouteTimer()
         is_tracking.value = true
     }
 
-    private fun start() {
+    private fun launchRouteTimer() {
+        startTime = System.currentTimeMillis()
+        CoroutineScope(Dispatchers.Default).launch {
+            while (is_tracking.value) {
+                lapTime = System.currentTimeMillis() - startTime
+            }
+            totalTime += lapTime
+        }
+    }
 
-//       addEmptyCoordinates()
+    private fun start() {
         addEmptyPolyline()
         is_tracking.value = true
-
+        is_on_route.value = true
+        launchRouteTimer()
         //Create channel
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -120,8 +130,7 @@ class LocationService : Service() {
                 notificationManager.notify(LOCATION_NOTIFICATION_ID, updatedNotification.build())
                 if (is_tracking.value) {
                     addPathPoint(location)
-//                    addRoutePathPoint(location)
-//                    Log.d(TAG, "ROUTE IS : ${route_path.value}")
+                    Log.d(TAG, "ROUTE IS : ${route_path.value}")
                 }
             }
             .launchIn(serviceScope)
@@ -133,52 +142,17 @@ class LocationService : Service() {
     private fun stop() {
         //Stop service
         is_tracking.value = false
+        is_on_route.value = false
+        total_time.value = totalTime
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
-    private fun postInitialValues() {
-        pathPoints.postValue(mutableListOf())
+    private fun addEmptyPolyline() = route_path.value.add(mutableListOf())
+    private fun addPathPoint(location: Location) {
+        val pos = LatLng(location.latitude, location.longitude)
+        route_path.value.last().add(pos)
     }
-
-    private fun addEmptyPolyline() = pathPoints.value?.apply {
-        add(mutableListOf())
-        pathPoints.postValue(this)
-    } ?: pathPoints.postValue(mutableListOf(mutableListOf()))
-
-    private fun addPathPoint(location: Location?) {
-        location?.let {
-            val pos = LatLng(location.latitude, location.longitude)
-            pathPoints.value?.apply {
-                last().add(pos)
-                pathPoints.postValue(this)
-            }
-        }
-    }
-
-//    private fun addEmptyCoordinates() {
-//        Log.d(TAG, "ADD EMPTY COORDINATES. CURRENT LIST IS : ${route_path.value}")
-//        val currentRouthPoints = routePath.value.toMutableList()
-//        currentRouthPoints.add(null)
-//        route_path.value = currentRouthPoints
-//    }
-//
-//    private fun addRoutePathPoint(location: Location) {
-//        val newPoint = LatLng(location.latitude, location.longitude)
-//        val currentRouthPoints = routePath.value.toMutableList()
-//        currentRouthPoints.add(newPoint)
-//        route_path.value = currentRouthPoints
-//    }
-//
-//    private fun addIdlePoint(location: Location) {
-//        location.let {
-//            val newPoint = LatLng(location.latitude, location.longitude)
-//            val currentIdlePath = idle_path.value.toMutableList()
-//            currentIdlePath.add(newPoint)
-//            idle_path.value = currentIdlePath
-//            Log.d(TAG, "IDLE IS : ${idle_path.value}")
-//        }
-//    }
 
     @SuppressLint("UnspecifiedImmutableFlag")
     private fun getMainActivityPendingIntent() = PendingIntent.getActivity(
@@ -189,7 +163,6 @@ class LocationService : Service() {
         },
         FLAG_IMMUTABLE
     )
-
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotificationChannel(notificationManager: NotificationManager) {
@@ -211,12 +184,15 @@ class LocationService : Service() {
         private var is_tracking = MutableStateFlow(false)
         val isTracking = is_tracking.asStateFlow()
 
-        //        private var route_path = MutableStateFlow<List<LatLng?>>(emptyList())
-//        val routePath = route_path.asStateFlow()
-//
-//        private var idle_path = MutableStateFlow<List<LatLng?>>(emptyList())
-//        val idlePath = idle_path.asStateFlow()
-        val pathPoints = MutableLiveData<Polylines>()
+        private var is_on_route = MutableStateFlow(false)
+        val isOnRoute = is_on_route.asStateFlow()
+
+        private var route_path = MutableStateFlow<Polylines>(mutableListOf())
+        val routePath = route_path.asStateFlow()
+
+        private var total_time = MutableStateFlow(0L)
+        val totalTime = total_time.asStateFlow()
+
     }
 
 }

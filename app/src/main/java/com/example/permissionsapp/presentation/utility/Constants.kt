@@ -19,7 +19,5 @@ object Constants {
     const val CAMERA_ZOOM_VALUE = 18F
     const val POLYLINE_WIDTH = 24F
     const val POLYLINE_COLOR = Color.BLUE
-    const val POLYLINE_IDLE_WIDTH = 12F
-    const val POLYLINE_IDLE_COLOR = Color.RED
 
 }

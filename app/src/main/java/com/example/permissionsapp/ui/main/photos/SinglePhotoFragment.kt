@@ -82,8 +82,6 @@ class SinglePhotoFragment : Fragment() {
                 .collectLatest { photos ->
                     viewModel.selectedItem.collectLatest { uri ->
                         val photoDescription = photos.find { it.pic_src == uri }?.description
-                        Log.d(TAG, "DESCRIPTION IS : $photoDescription")
-                        Log.d(TAG, "URI IS : $uri")
                         if (photoDescription != null) {
                             description.visibility = View.VISIBLE
                             description.text = photoDescription

@@ -18,14 +18,10 @@ import com.example.permissionsapp.domain.use_case_local.UseCaseObjectLocal
 import com.example.permissionsapp.domain.use_case_local.UseCasePlacesLocal
 import com.example.permissionsapp.domain.use_case_local.UseCaseRouteLocal
 import com.example.permissionsapp.presentation.utility.DefaultLocationClient
-import com.example.permissionsapp.presentation.utility.RouteStates
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.text.DateFormat
 import java.text.SimpleDateFormat
-import java.time.LocalDate
-import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
 
@@ -94,9 +90,6 @@ class MyViewModel @Inject constructor(
 
     private val _allRoutes = MutableStateFlow<List<RouteData>>(emptyList())
     val allRoutes = _allRoutes.asStateFlow()
-
-    private val _routeStatus = MutableStateFlow<RouteStates>(RouteStates.RouteStopped)
-    val routeStatus = _routeStatus.asStateFlow()
 
     private val _isPhoto = MutableStateFlow<Boolean?>(null)
     val isPhoto = _isPhoto.asStateFlow()
@@ -178,6 +171,9 @@ class MyViewModel @Inject constructor(
                 routeData = RouteData(
                     route_name = routeName,
                     route_description = null,
+                    routeDistance = null,
+                    routeAverageSpeed = null,
+                    routeTime = null,
                     start_date = getCurrentDate(),
                     end_date = getCurrentDate()
                 )
@@ -188,6 +184,17 @@ class MyViewModel @Inject constructor(
     fun getAllRoutes() {
         viewModelScope.launch {
             _allRoutes.value = useCaseRouteLocal.getAllRoutes()
+        }
+    }
+
+    fun selectLastRouteName(){
+        viewModelScope.launch {
+            val allRoute = useCaseRouteLocal.getAllRoutes()
+            val ids = mutableListOf<Int>()
+            allRoute.forEach { ids.add(it.id) }
+            val maxId = ids.max()
+            _routeName.value = allRoute.find { it.id == maxId }?.route_name
+            Log.d(TAG, "ROUTE NAME : ${_routeName.value}")
         }
     }
 
@@ -396,12 +403,6 @@ class MyViewModel @Inject constructor(
 
     fun getCurrentLocation(interval: Long): Flow<Location> =
         locationClient.getLocationUpdates(interval)
-
-    fun changeRouteStatus(routeStates: RouteStates) {
-        viewModelScope.launch {
-            _routeStatus.value = routeStates
-        }
-    }
 
 
     //LoginActivity

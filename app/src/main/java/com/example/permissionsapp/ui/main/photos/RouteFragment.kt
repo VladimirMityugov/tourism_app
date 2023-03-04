@@ -119,7 +119,6 @@ class RouteFragment : Fragment() {
                     viewModel.getRouteInfoByName(name).collectLatest { routeInfo ->
                         val routeDescription =
                             routeInfo.find { it.route_name == name }?.route_description
-                        Log.d(TAG, "DESCRIPTION IS : $routeDescription")
                         if (routeDescription != null) {
                             description.visibility = View.VISIBLE
                             description.text = routeDescription
@@ -142,7 +141,6 @@ class RouteFragment : Fragment() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun checkPermissions() {
-        Log.d(TAG, "check permissions")
         val allGranted = REQUEST_PERMISSIONS.all { permission ->
             ContextCompat.checkSelfPermission(
                 requireContext(),
@@ -168,8 +166,8 @@ class RouteFragment : Fragment() {
         viewModel.switchRouteSelected(true)
         val popupWindow = DescriptionFragment()
         popupWindow.setStyle(DialogFragment.STYLE_NORMAL, R.style.BottomSheetDialogTheme)
-        popupWindow.enterTransition = com.google.android.material.R.id.animateToStart
-        popupWindow.exitTransition = com.google.android.material.R.id.animateToEnd
+        popupWindow.enterTransition = android.transition.Fade.IN
+        popupWindow.exitTransition = android.transition.Fade.OUT
         popupWindow.show(requireActivity().supportFragmentManager, "POP_UP")
     }
 

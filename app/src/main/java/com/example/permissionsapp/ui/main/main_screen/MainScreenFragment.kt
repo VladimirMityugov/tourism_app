@@ -94,7 +94,6 @@ class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
                     scrollView.visibility = View.VISIBLE
                     infoField.visibility = View.INVISIBLE
                     firstRouteButton.visibility = View.INVISIBLE
-                    Log.d(TAG, "routes are : $it")
                     routesAdapter.submitList(it)
                 } else {
                     routesRecyclerView.visibility = View.GONE
@@ -154,11 +153,9 @@ class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
 
     private fun requestPermissions() {
         if (requireContext().hasLocationPermission()) {
-            Log.d(TAG, "has permissions = true")
             return
         }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            Log.d(TAG, "Version is below Q, show dialog")
             EasyPermissions.requestPermissions(
                 this,
                 RATIONALE_FOR_LOCATION,
@@ -167,7 +164,6 @@ class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
                 android.Manifest.permission.ACCESS_FINE_LOCATION
             )
         } else {
-            Log.d(TAG, "Version is above Q, show dialog")
             EasyPermissions.requestPermissions(
                 this,
                 RATIONALE_FOR_LOCATION,
@@ -213,40 +209,3 @@ class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
         }
     }
 }
-
-//private fun createAlertDialog() {
-//    MaterialAlertDialogBuilder(requireContext())
-//        .setTitle("Location permission dialog")
-//        .setMessage("To provide you better experience, please accept location permission")
-//        .setPositiveButton("OK", DialogInterface.OnClickListener { _, _ ->
-//            launcher.launch(MapsFragment.REQUIRED_PERMISSIONS)
-//        })
-//        .setNegativeButton("Cancel", DialogInterface.OnClickListener { dialog, _ ->
-//            dialog.dismiss()
-//            requireActivity().onBackPressedDispatcher.onBackPressed()
-//        })
-//        .create()
-//        .show()
-//}
-
-//private fun checkPermissions() {
-//    val allGranted = REQUIRED_PERMISSIONS.all { permission ->
-//        ContextCompat.checkSelfPermission(
-//            requireContext(),
-//            permission
-//        ) == PackageManager.PERMISSION_GRANTED
-//    }
-//    if (allGranted) {
-//        val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
-//        mapFragment?.getMapAsync(onMapReadyCallback)
-//        Log.d(com.example.permissionsapp.ui.main.maps.TAG, "ALL PERMISSIONS ARE GRANTED. 1")
-////            setMapSettings()
-////            setLocationSource()
-//    } else {
-//        if (shouldShowRequestPermissionRationale(REQUIRED_PERMISSIONS[0])) {
-//            createAlertDialog()
-//        } else {
-//            launcher.launch(REQUIRED_PERMISSIONS)
-//        }
-//    }
-//}

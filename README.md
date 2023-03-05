@@ -6,6 +6,7 @@ of places you like along this route and share it with friends and
 other users.**
 
 **Used in project:**
+
 **Kotlin, Clean Architecture, MVVM, Hilt, Coroutines, Flow,
 Room, Retrofit, Glide, Google Maps API, CameraX, Firebase
 Auth, Crashlytics.**

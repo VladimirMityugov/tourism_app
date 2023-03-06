@@ -40,7 +40,7 @@ object Auxiliary {
     }
 
     fun calculateAverageSpeed(time: Long, distance: Float): Float {
-        val result = round((distance.toInt() / 1000F) / (time / 1000F / 60 / 60) * 10) / 10F
+        val result = round((distance / 1000F) / (time / 1000F / 60 / 60) * 10) / 10F
         Log.d(TAG, "RESULT IS : $result")
         return result
     }

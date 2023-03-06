@@ -14,6 +14,7 @@ import javax.inject.Inject
 
 class PhotoAdapter @Inject constructor(
     val onItemClick: (PhotoData) -> Unit,
+    val onDeletePhotoClick: (PhotoData) -> Unit,
     val onLongClick: (PhotoData) -> Unit
 ) : ListAdapter<PhotoData, MyViewHolder>(
     DiffUtilCallback()
@@ -23,13 +24,32 @@ class PhotoAdapter @Inject constructor(
         return MyViewHolder(
             binding = PhotoItemBinding.inflate(
                 LayoutInflater.from(parent.context), parent, false
-            )
+            ),
+            onItemClick = onItemClick,
+            onLongClick = onLongClick,
+            onDeletePhotoClick = onDeletePhotoClick
         )
     }
 
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
         val item = getItem(position)
-        with(holder.binding) {
+        holder.bind(item)
+    }
+
+    override fun getItemCount(): Int {
+        return currentList.size
+    }
+}
+
+class MyViewHolder(
+    val binding: PhotoItemBinding,
+    val onItemClick: (PhotoData) -> Unit,
+    val onDeletePhotoClick: (PhotoData) -> Unit,
+    val onLongClick: (PhotoData) -> Unit
+) : ViewHolder(binding.root) {
+
+    fun bind(item: PhotoData) {
+        with(binding) {
             date.text = buildString {
                 if (item.description != null) {
                     append(item.description.take(15))
@@ -45,24 +65,26 @@ class PhotoAdapter @Inject constructor(
                 .error(R.drawable.ic_baseline_error_outline_24)
                 .placeholder(R.drawable.ic_baseline_image_24)
                 .into(photo)
+
+            trashIcon.setOnClickListener {
+                onDeletePhotoClick(item)
+            }
+
+            root.setOnClickListener {
+                onItemClick(item)
+            }
+
+            root.setOnLongClickListener {
+                onLongClick(item)
+                true
+            }
+
         }
 
-        holder.binding.root.setOnClickListener {
-            onItemClick(item)
-        }
 
-        holder.binding.root.setOnLongClickListener {
-            onLongClick(item)
-            true
-        }
-    }
-
-    override fun getItemCount(): Int {
-        return currentList.size
     }
 }
 
-class MyViewHolder(val binding: PhotoItemBinding) : ViewHolder(binding.root)
 
 class DiffUtilCallback : DiffUtil.ItemCallback<PhotoData>() {
     override fun areItemsTheSame(oldItem: PhotoData, newItem: PhotoData): Boolean {

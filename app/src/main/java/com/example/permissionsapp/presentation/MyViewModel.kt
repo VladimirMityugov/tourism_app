@@ -1,5 +1,6 @@
 package com.example.permissionsapp.presentation
 
+import android.graphics.Bitmap
 import android.location.Location
 import android.os.Build
 import android.util.Log
@@ -112,7 +113,8 @@ class MyViewModel @Inject constructor(
     fun getRoutesList(): Flow<List<PhotoData>> =
         useCasePhotoLocal.getAllRoutesPhotosFromDb().map { it -> it.distinctBy { it.routeName } }
 
-    fun getPhotosByRouteName(routeName: String): Flow<List<PhotoData>> = useCasePhotoLocal.getPhotosByRouteName(routeName)
+    fun getPhotosByRouteName(routeName: String): Flow<List<PhotoData>> =
+        useCasePhotoLocal.getPhotosByRouteName(routeName)
 
 
     fun selectRouteName(routeName: String?) {
@@ -159,7 +161,7 @@ class MyViewModel @Inject constructor(
         }
     }
 
-    fun switchPhotoSelected(isPhoto: Boolean){
+    fun switchPhotoSelected(isPhoto: Boolean) {
         _isPhoto.value = isPhoto
     }
 
@@ -171,9 +173,10 @@ class MyViewModel @Inject constructor(
                 routeData = RouteData(
                     route_name = routeName,
                     route_description = null,
-                    routeDistance = null,
-                    routeAverageSpeed = null,
-                    routeTime = null,
+                    route_distance = null,
+                    route_average_speed = null,
+                    route_time = null,
+                    bmp = null,
                     start_date = getCurrentDate(),
                     end_date = getCurrentDate()
                 )
@@ -181,20 +184,18 @@ class MyViewModel @Inject constructor(
         }
     }
 
-    fun getAllRoutes() {
-        viewModelScope.launch {
-            _allRoutes.value = useCaseRouteLocal.getAllRoutes()
-        }
-    }
+    fun getAllRoutes(): Flow<List<RouteData>> = useCaseRouteLocal.getAllRoutes()
 
-    fun selectLastRouteName(){
+
+    fun selectLastRouteName() {
         viewModelScope.launch {
-            val allRoute = useCaseRouteLocal.getAllRoutes()
+            useCaseRouteLocal.getAllRoutes().collectLatest {allRoutes->
             val ids = mutableListOf<Int>()
-            allRoute.forEach { ids.add(it.id) }
+            allRoutes.forEach { ids.add(it.id) }
             val maxId = ids.max()
-            _routeName.value = allRoute.find { it.id == maxId }?.route_name
+            _routeName.value = allRoutes.find { it.id == maxId }?.route_name
             Log.d(TAG, "ROUTE NAME : ${_routeName.value}")
+            }
         }
     }
 
@@ -206,22 +207,37 @@ class MyViewModel @Inject constructor(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun saveRouteData(
+        routeDistance: Float,
+        routeAverageSpeed: Float,
+        routeTime: Long,
+        routeName: String
+    ) {
+        viewModelScope.launch {
+            useCaseRouteLocal.addRouteData(
+                routeDistance = routeDistance,
+                routeAverageSpeed = routeAverageSpeed,
+                routeTime = routeTime,
+                endDate = getCurrentDate(),
+                routeName = routeName
+            )
+        }
+    }
+
+    fun addRoutePicture(routePicture: Bitmap, routeName: String){
+        viewModelScope.launch {
+            useCaseRouteLocal.addRoutePicture(routePicture, routeName)
+        }
+    }
+
     fun addRouteDescription(routeDescription: String, routeName: String) {
         viewModelScope.launch {
             useCaseRouteLocal.addRouteDescription(routeDescription, routeName)
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun updateRouteEndDate(routeName: String) {
-        viewModelScope.launch {
-            useCaseRouteLocal.updateRouteEndDate(
-                endDate = getCurrentDate(),
-                routeName = routeName)
-        }
-    }
-
-    fun switchRouteSelected(isRoute: Boolean){
+    fun switchRouteSelected(isRoute: Boolean) {
         _isRoute.value = isRoute
     }
 
@@ -463,7 +479,7 @@ class MyViewModel @Inject constructor(
         private const val BANKS = "banks"
         private const val SHOPS = "shops"
         private const val TRANSPORT = "transport"
-        private const val DATE_FORMAT = "yyyy-MM-dd hh:mm:ss"
+        private const val DATE_FORMAT = "dd.MM.yy"
     }
 }
 

@@ -74,7 +74,7 @@ class DescriptionFragment : BottomSheetDialogFragment() {
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             viewModel.getRouteInfoByName(routeName).collectLatest { routeInfo ->
                 val routeDescription =
-                    routeInfo.find { it.route_name == routeName }?.route_description
+                    routeInfo.route_description
                 if (routeDescription != null) {
                     descriptionInputField.setText(routeDescription)
                 }

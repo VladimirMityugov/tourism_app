@@ -1,5 +1,6 @@
 package com.example.permissionsapp.data.local.entities
 
+import android.graphics.Bitmap
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -15,11 +16,13 @@ data class RouteData(
     @ColumnInfo
     val route_description: String?,
     @ColumnInfo
-    val routeDistance: Float?,
+    val route_distance: Float?,
     @ColumnInfo
-    val routeAverageSpeed: Float?,
+    val route_average_speed: Float?,
     @ColumnInfo
-    val routeTime: Float?,
+    val route_time: Float?,
+    @ColumnInfo
+    var bmp: Bitmap? = null,
     @ColumnInfo
     val start_date: String,
     @ColumnInfo

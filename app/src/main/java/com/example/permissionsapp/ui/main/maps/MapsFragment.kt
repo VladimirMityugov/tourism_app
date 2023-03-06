@@ -47,7 +47,9 @@ import com.example.tourismApp.R
 import com.example.tourismApp.databinding.FragmentMapsBinding
 import com.google.android.gms.maps.*
 import com.google.android.gms.maps.model.*
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.collectLatest
 import java.util.*
 
@@ -76,6 +78,7 @@ class MapsFragment : Fragment() {
     private var locationSourceListener: LocationSource.OnLocationChangedListener? = null
     private var map: GoogleMap? = null
     private lateinit var mapView: FragmentContainerView
+    private var routePicture: Bitmap? = null
 
     private var routeIsStarted: Boolean = false
 
@@ -276,12 +279,6 @@ class MapsFragment : Fragment() {
             }
         }
 
-
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            LocationService.totalTime.collectLatest {
-                Log.d(TAG, "TIME IS : $it")
-            }
-        }
     }
 
 
@@ -592,6 +589,7 @@ class MapsFragment : Fragment() {
     }
 
     private fun zoomToSeeWholeTrack() {
+        Log.d(TAG, "ZOOM")
         routePath = LocationService.routePath.value
         val bounds = LatLngBounds.builder()
         for (polyline in routePath) {
@@ -611,30 +609,43 @@ class MapsFragment : Fragment() {
     }
 
     private fun saveRouteData() {
+        Log.d(TAG, "SAVE ROUTE DATA")
         routePath = LocationService.routePath.value
+        Log.d(TAG, "ROUTE PATH : $routePath")
+        val routeDistance = Auxiliary.calculateRouteDistance(routePath)
+        Log.d(TAG, "ROUTE DISTANCE : $routeDistance")
+        val routeName = viewModel.routeName.value
+        Log.d(TAG, "ROUTE NAME : ${viewModel.routeName.value}")
+
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            LocationService.totalTime.collectLatest {
-                totalTime = it
-                val routeDistance = Auxiliary.calculateRouteDistance(routePath)
-                val averageSpeed = Auxiliary.calculateAverageSpeed(totalTime, routeDistance)
+            LocationService.totalTime.collectLatest { totalTime ->
+                Log.d(TAG, "TOTAL TIME : $totalTime OR $totalTime")
+                val averageSpeed =
+                    Auxiliary.calculateAverageSpeed(totalTime, routeDistance)
+                if (routeName != null) {
+                    viewModel.saveRouteData(
+                        routeDistance, averageSpeed, totalTime,
+                         routeName
+                    )
+                }
                 Log.d(
                     TAG,
-                    "ROUTS DATA IS: TIME : $totalTime, DISTANCE: $routeDistance, AVG SPEED: $averageSpeed"
+                    "ROUTE DATA IS : Time: $totalTime, Distance: $routeDistance, Speed: $averageSpeed, Route name: $routeName, Route picture: $routePicture"
                 )
             }
         }
-        stopRouteButton.visibility = View.INVISIBLE
-        startRouteButton.visibility = View.INVISIBLE
-        takePhotoButton.visibility = View.INVISIBLE
-        frame.visibility = View.INVISIBLE
-        map?.snapshot {
+        map?.snapshot { bmp ->
+            Log.d(TAG, "BITMAP : $bmp")
+            viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+                val result = async { bmp }
+                routePicture = result.await()
+                viewModel.addRoutePicture(result.await()!!, routeName!!)
+                viewModel.selectRouteName(null)
+                Log.d(TAG, "ROUTE NAME CLEAR")
 
+            }
         }
-        stopRouteButton.visibility = View.VISIBLE
-        startRouteButton.visibility = View.VISIBLE
-        takePhotoButton.visibility = View.VISIBLE
-        frame.visibility = View.VISIBLE
-
+        Snackbar.make(requireContext(), mapView, "Route data is saved", Snackbar.LENGTH_LONG).show()
     }
 
 
@@ -677,25 +688,24 @@ class MapsFragment : Fragment() {
     }
 
     private fun onStopButtonClick() {
-        stopRoute()
-        val currentRouteName = viewModel.routeName.value
-        if (currentRouteName != null) {
-            viewModel.updateRouteEndDate(currentRouteName)
-        }
-        viewModel.selectRouteName(null)
+
         zoomToSeeWholeTrack()
         saveRouteData()
+        stopRoute()
+        routePath.clear()
+        Log.d(TAG, "ROUTE PATH CLEAR")
+        map?.clear()
+        Log.d(TAG, "MAP CLEAR")
+        Log.d(TAG, "ROUTE PICTURE : $routePicture")
+
+
     }
 
     private fun onStartButtonClick() {
-        Log.d(TAG, "START BUTTON IS CLICKED. ROUTE NAME: ${viewModel.routeName.value}")
         if (viewModel.routeName.value != null) {
-            Log.d(TAG, "ROUTE IS STARTED: $routeIsStarted")
             if (!routeIsStarted) {
-                Log.d(TAG, "START ROUTE")
                 startRoute()
             } else {
-                Log.d(TAG, "PAUSE ROUTE")
                 pauseRoute()
             }
         } else {

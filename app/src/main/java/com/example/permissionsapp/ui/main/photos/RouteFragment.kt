@@ -8,11 +8,8 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.activity.OnBackPressedDispatcher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
-import androidx.appcompat.widget.AppCompatButton
-import androidx.appcompat.widget.AppCompatEditText
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
@@ -27,12 +24,10 @@ import com.example.permissionsapp.presentation.MyViewModel
 import com.example.permissionsapp.presentation.PhotoAdapter
 import com.example.tourismApp.R
 import com.example.tourismApp.databinding.FragmentRouteBinding
-import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.*
+import kotlin.math.round
 
 private const val TAG = "ROUTE_FRAGMENT"
 private const val DATE_FORMAT = "dd-MM-yyyy \n hh-mm"
@@ -61,6 +56,9 @@ class RouteFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var routeName: AppCompatTextView
+    private lateinit var routeDistance: AppCompatTextView
+    private lateinit var routeDuration: AppCompatTextView
+    private lateinit var routeAvgSpeed: AppCompatTextView
     private lateinit var photosRecyclerView: RecyclerView
     private lateinit var backButton: AppCompatImageButton
     private lateinit var description: AppCompatTextView
@@ -72,8 +70,10 @@ class RouteFragment : Fragment() {
     @RequiresApi(Build.VERSION_CODES.O)
     private val photoAdapter = PhotoAdapter(
         onItemClick = { PhotoData -> onItemClick(PhotoData) },
-        onLongClick = { PhotoData -> onLongItemClick(PhotoData) }
+        onLongClick = { PhotoData -> onLongItemClick(PhotoData) },
+        onDeletePhotoClick = { PhotoData -> onDeleteItemClick(PhotoData) }
     )
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -92,6 +92,9 @@ class RouteFragment : Fragment() {
         backButton = binding.backButton
         description = binding.description
         routeName = binding.routeName
+        routeDistance = binding.routeDistance
+        routeDuration = binding.routeDuration
+        routeAvgSpeed = binding.routeAvgSpeed
         addDescriptionButton = binding.addDescriptionButton
         addDescriptionTitle = binding.addDescriptionTitle
         photosRecyclerView = binding.photosRecyclerView
@@ -117,8 +120,20 @@ class RouteFragment : Fragment() {
                 if (name != null) {
                     routeName.text = name
                     viewModel.getRouteInfoByName(name).collectLatest { routeInfo ->
+                        routeAvgSpeed.text = buildString {
+                            append("Average speed (km/h): ")
+                            append(routeInfo.route_average_speed)
+                        }
+                        routeDuration.text = buildString {
+                            append("Route duration (minutes): ")
+                            append(round(routeInfo.route_time!! / 1000F / 60) / 100 )
+                        }
+                        routeDistance.text = buildString {
+                            append("Route distance (meters): ")
+                            append(routeInfo.route_distance!!.toInt())
+                        }
                         val routeDescription =
-                            routeInfo.find { it.route_name == name }?.route_description
+                            routeInfo.route_description
                         if (routeDescription != null) {
                             description.visibility = View.VISIBLE
                             description.text = routeDescription
@@ -137,6 +152,10 @@ class RouteFragment : Fragment() {
     private fun onItemClick(item: PhotoData) {
         viewModel.selectItem(item.pic_src)
         findNavController().navigate(R.id.action_routeFragment_to_singlePhotoFragment)
+    }
+
+    private fun onDeleteItemClick(photoData: PhotoData) {
+        viewModel.deletePhoto(photoData.pic_src)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

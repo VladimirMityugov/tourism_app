@@ -22,6 +22,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import com.example.permissionsapp.data.local.entities.PhotoData
+import com.example.permissionsapp.data.local.entities.RouteData
 import com.example.permissionsapp.presentation.MyViewModel
 import com.example.permissionsapp.presentation.RoutesAdapter
 import com.example.permissionsapp.presentation.utility.Constants.RATIONALE_FOR_LOCATION
@@ -54,8 +55,10 @@ class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
     private lateinit var scrollView: ScrollView
 
     private val routesAdapter = RoutesAdapter(
-        onItemClick = { route -> onRouteClick(route) }
+        onItemClick = { route -> onRouteClick(route) },
+        onDeleteRouteClick = { route -> onRouteDeleteClick(route) }
     )
+
 
     private val viewModel: MyViewModel by activityViewModels()
 
@@ -88,7 +91,7 @@ class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
         }
 
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.getRoutesList().collectLatest {
+            viewModel.getAllRoutes().collectLatest {
                 if (it.isNotEmpty()) {
                     routesRecyclerView.visibility = View.VISIBLE
                     scrollView.visibility = View.VISIBLE
@@ -145,11 +148,17 @@ class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
     }
 
 
-    private fun onRouteClick(route: PhotoData) {
-        viewModel.selectRouteName(route.routeName)
-        viewModel.getPhotosByRouteName(route.routeName)
+    private fun onRouteClick(route: RouteData) {
+        viewModel.selectRouteName(route.route_name)
+        viewModel.getPhotosByRouteName(route.route_name)
         findNavController().navigate(R.id.action_main_to_routeFragment)
     }
+
+    private fun onRouteDeleteClick(route: RouteData) {
+        viewModel.deletePhotosByRouteName(route.route_name)
+        viewModel.deleteRouteByName(route.route_name)
+    }
+
 
     private fun requestPermissions() {
         if (requireContext().hasLocationPermission()) {

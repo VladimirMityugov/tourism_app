@@ -1,53 +1,40 @@
 package com.example.permissionsapp.presentation
 
-import android.net.Uri
+
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.bumptech.glide.Glide
-import com.example.permissionsapp.data.local.entities.PhotoData
+import com.example.permissionsapp.data.local.entities.RouteData
 import com.example.tourismApp.R
-import com.example.tourismApp.databinding.PhotoItemBinding
 import com.example.tourismApp.databinding.RouteItemBinding
-import javax.inject.Inject
+
 
 class RoutesAdapter(
-    val onItemClick: (PhotoData) -> Unit
-) : ListAdapter<PhotoData, RoutesViewHolder>(
-
-    DiffUtilCallback()
+    val onItemClick: (RouteData) -> Unit,
+    val onDeleteRouteClick: (RouteData) -> Unit
+) : ListAdapter<RouteData, RoutesViewHolder>(
+    DiffUtilRoutes()
 ) {
+
+
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RoutesViewHolder {
         return RoutesViewHolder(
             binding = RouteItemBinding.inflate(
                 LayoutInflater.from(parent.context), parent, false
-            )
+            ),
+            onItemClick = onItemClick,
+            onDeleteRouteClick = onDeleteRouteClick
         )
     }
 
     override fun onBindViewHolder(holder: RoutesViewHolder, position: Int) {
         val item = getItem(position)
-        with(holder.binding) {
-            routeName.text = item.routeName
-            routeDate.text = buildString {
-                append("Route date : ")
-                append(item.date)
-            }
-            Glide
-                .with(photo.context)
-                .load(Uri.parse(item.pic_src))
-                .centerCrop()
-                .error(R.drawable.ic_baseline_error_outline_24)
-                .placeholder(R.drawable.ic_baseline_image_24)
-                .into(photo)
-        }
-
-        holder.binding.root.setOnClickListener {
-            onItemClick(item)
-        }
+        holder.bind(item)
     }
 
     override fun getItemCount(): Int {
@@ -55,14 +42,61 @@ class RoutesAdapter(
     }
 }
 
-class RoutesViewHolder(val binding: RouteItemBinding) : ViewHolder(binding.root)
+class RoutesViewHolder(
+    val binding: RouteItemBinding,
+    val onDeleteRouteClick: (RouteData) -> Unit,
+    val onItemClick: (RouteData) -> Unit
+) : ViewHolder(binding.root) {
 
-class DiffUtilRoutes : DiffUtil.ItemCallback<PhotoData>() {
-    override fun areItemsTheSame(oldItem: PhotoData, newItem: PhotoData): Boolean {
-        return oldItem.pic_src == newItem.pic_src
+    private var isTrashVisible = false
+    fun bind(item: RouteData) {
+        with(binding) {
+            routeName.text = item.route_name
+            routeStartDate.text = buildString {
+                append("Route started : ")
+                append(item.start_date)
+            }
+
+            routeEndDate.text = buildString {
+                append("Route finished : ")
+                append(item.end_date)
+            }
+
+            Glide
+                .with(routePicture.context)
+                .load(item.bmp)
+                .error(R.drawable.ic_baseline_error_outline_24)
+                .placeholder(R.drawable.ic_baseline_image_24)
+                .into(routePicture)
+
+            trashIcon.setOnClickListener {
+                onDeleteRouteClick(item)
+            }
+
+            root.setOnClickListener {
+                onItemClick(item)
+            }
+
+            root.setOnLongClickListener {
+                if(!isTrashVisible){
+                    trashIcon.visibility = View.VISIBLE
+                    isTrashVisible = true
+                } else {
+                    trashIcon.visibility = View.INVISIBLE
+                    isTrashVisible = false
+                }
+                true
+            }
+        }
+    }
+}
+
+class DiffUtilRoutes : DiffUtil.ItemCallback<RouteData>() {
+    override fun areItemsTheSame(oldItem: RouteData, newItem: RouteData): Boolean {
+        return oldItem.id == newItem.id
     }
 
-    override fun areContentsTheSame(oldItem: PhotoData, newItem: PhotoData): Boolean {
+    override fun areContentsTheSame(oldItem: RouteData, newItem: RouteData): Boolean {
         return oldItem == newItem
     }
 

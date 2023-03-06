@@ -1,5 +1,6 @@
 package com.example.permissionsapp.domain.use_case_local
 
+import android.graphics.Bitmap
 import com.example.permissionsapp.data.local.entities.RouteData
 import com.example.permissionsapp.data.repository.repository_local.RepositoryRouteLocal
 import kotlinx.coroutines.flow.Flow
@@ -12,11 +13,11 @@ class UseCaseRouteLocal @Inject constructor(
         repositoryRouteLocal.insertRoute(routeData)
     }
 
-    suspend fun getAllRoutes(): List<RouteData>{
+    fun getAllRoutes(): Flow<List<RouteData>>{
         return repositoryRouteLocal.getAllRoutes()
     }
 
-    fun getRouteByName(routeName: String): Flow<List<RouteData>> {
+    fun getRouteByName(routeName: String): Flow<RouteData> {
         return repositoryRouteLocal.getRouteByName(routeName)
     }
 
@@ -24,11 +25,27 @@ class UseCaseRouteLocal @Inject constructor(
         repositoryRouteLocal.deleteRouteByName(routeName)
     }
 
-    suspend fun addRouteDescription(routeDescription: String, routeName: String){
-        repositoryRouteLocal.addRouteDescription(routeDescription, routeName)
+    suspend fun addRoutePicture(routePicture: Bitmap, routeName: String){
+        repositoryRouteLocal.addRoutePicture(routePicture, routeName)
     }
 
-    suspend fun updateRouteEndDate(endDate: String, routeName: String){
-        repositoryRouteLocal.updateRouteEndDate(endDate, routeName)
+    suspend fun addRouteData(
+        routeDistance: Float,
+        routeAverageSpeed: Float,
+        routeTime: Long,
+        endDate: String,
+        routeName: String
+    ) {
+        repositoryRouteLocal.addRouteData(
+            routeDistance,
+            routeAverageSpeed,
+            routeTime,
+            endDate,
+            routeName
+        )
+    }
+
+    suspend fun addRouteDescription(routeDescription: String, routeName: String) {
+        repositoryRouteLocal.addRouteDescription(routeDescription, routeName)
     }
 }

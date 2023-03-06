@@ -11,5 +11,6 @@
     <color name="myBlack">#1e2124</color>
     <color name="myGrey">#1e2124</color>
     <color name="myLightGrey">#939597</color>
+    <color name="myBlue">#2e79bd</color>
     <color name="transparent">#00FFFFFF</color>
 </resources>

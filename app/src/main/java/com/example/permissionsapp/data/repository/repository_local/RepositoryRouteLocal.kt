@@ -1,6 +1,7 @@
 package com.example.permissionsapp.data.repository.repository_local
 
 
+import android.graphics.Bitmap
 import com.example.permissionsapp.data.local.dao.RouteDao
 import com.example.permissionsapp.data.local.entities.RouteData
 import kotlinx.coroutines.flow.Flow
@@ -10,27 +11,43 @@ class RepositoryRouteLocal @Inject constructor(
     private val routeDao: RouteDao
 ) {
 
-    suspend fun insertRoute(routeData: RouteData){
+    suspend fun insertRoute(routeData: RouteData) {
         routeDao.insertRoute(routeData)
     }
 
-    suspend fun getAllRoutes(): List<RouteData>{
+    fun getAllRoutes(): Flow<List<RouteData>> {
         return routeDao.getAllRoutes()
     }
 
-    fun getRouteByName(routeName: String): Flow<List<RouteData>> {
+    fun getRouteByName(routeName: String): Flow<RouteData> {
         return routeDao.getRouteByName(routeName)
     }
 
-    suspend fun deleteRouteByName (routeName: String){
+    suspend fun deleteRouteByName(routeName: String) {
         routeDao.deleteRouteByName(routeName)
     }
 
-    suspend fun addRouteDescription(routeDescription: String, routeName: String){
-        routeDao.addRouteDescription(routeDescription, routeName)
+    suspend fun addRoutePicture(routePicture: Bitmap, routeName: String){
+        routeDao.addRoutePicture(routePicture, routeName)
     }
 
-    suspend fun updateRouteEndDate(endDate: String, routeName: String){
-        routeDao.updateRouteEndDate(endDate, routeName)
+    suspend fun addRouteData(
+        routeDistance: Float,
+        routeAverageSpeed: Float,
+        routeTime: Long,
+        endDate: String,
+        routeName: String
+    ) {
+        routeDao.addRouteData(
+            routeDistance,
+            routeAverageSpeed,
+            routeTime,
+            endDate,
+            routeName
+        )
+    }
+
+    suspend fun addRouteDescription(routeDescription: String, routeName: String) {
+        routeDao.addRouteDescription(routeDescription, routeName)
     }
 }

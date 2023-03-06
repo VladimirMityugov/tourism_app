@@ -1,6 +1,15 @@
 # Amazing routes
 ### Make photos, attach them to your routes, share with friends. Available in English and Russian
 
+**The application allows to save the touristic routes that you have passed, photos
+of places you like along this route and share it with friends and
+other users.**
+
+**Used in project:**
+
+**Kotlin, Clean Architecture, MVVM, Hilt, Coroutines, Flow,
+Room, Retrofit, Glide, Google Maps API, CameraX, Firebase
+Auth, Crashlytics.**
 
 **Authentification with Firebase Auth**
 

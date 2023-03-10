@@ -11,7 +11,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
-import com.example.permissionsapp.presentation.MyViewModel
+import com.example.permissionsapp.presentation.view_models.MainViewModel
 import com.example.tourismApp.databinding.FragmentGallerySingleBinding
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
@@ -24,7 +24,7 @@ class GallerySingleFragment : Fragment() {
 
     private lateinit var galleryPicture: AppCompatImageView
 
-    private val viewModel: MyViewModel by activityViewModels()
+    private val viewModel: MainViewModel by activityViewModels()
 
 
     override fun onCreateView(

@@ -2,7 +2,7 @@ package com.example.permissionsapp.domain.use_case_local
 
 import android.graphics.Bitmap
 import com.example.permissionsapp.data.local.entities.RouteData
-import com.example.permissionsapp.data.repository.repository_local.RepositoryRouteLocal
+import com.example.permissionsapp.data.repositories.repository_local.RepositoryRouteLocal
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
@@ -27,6 +27,10 @@ class UseCaseRouteLocal @Inject constructor(
 
     suspend fun addRoutePicture(routePicture: Bitmap, routeName: String){
         repositoryRouteLocal.addRoutePicture(routePicture, routeName)
+    }
+
+    suspend fun finishRoute(routeStatus: Boolean,routeName: String){
+        repositoryRouteLocal.finishRoute(routeStatus,routeName)
     }
 
     suspend fun addRouteData(

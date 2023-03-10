@@ -1,4 +1,4 @@
-package com.example.permissionsapp.data.repository
+package com.example.permissionsapp.data.repositories
 
 import android.util.Log
 import com.example.permissionsapp.data.remote.places_info_dto.PlaceInfo

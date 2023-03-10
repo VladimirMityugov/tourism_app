@@ -1,4 +1,4 @@
-package com.example.permissionsapp.data.repository.repository_local
+package com.example.permissionsapp.data.repositories.repository_local
 
 
 import android.graphics.Bitmap
@@ -45,6 +45,10 @@ class RepositoryRouteLocal @Inject constructor(
             endDate,
             routeName
         )
+    }
+
+    suspend fun finishRoute(routeStatus: Boolean,routeName: String){
+        routeDao.finishRoute(routeStatus,routeName)
     }
 
     suspend fun addRouteDescription(routeDescription: String, routeName: String) {

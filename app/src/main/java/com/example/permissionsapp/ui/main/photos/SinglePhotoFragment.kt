@@ -2,7 +2,6 @@ package com.example.permissionsapp.ui.main.photos
 
 
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -15,10 +14,9 @@ import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
-import com.example.permissionsapp.presentation.MyViewModel
+import com.example.permissionsapp.presentation.view_models.MainViewModel
 import com.example.tourismApp.R
 import com.example.tourismApp.databinding.FragmentSinglePhotoBinding
-import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.collectLatest
 
 private const val TAG = "SINGLE_PHOTO"
@@ -38,7 +36,7 @@ class SinglePhotoFragment : Fragment() {
     private lateinit var addDescriptionTitle: AppCompatTextView
     private lateinit var description: AppCompatTextView
 
-    private val viewModel: MyViewModel by activityViewModels()
+    private val viewModel: MainViewModel by activityViewModels()
 
 
     override fun onCreateView(

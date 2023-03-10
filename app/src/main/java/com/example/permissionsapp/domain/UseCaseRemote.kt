@@ -3,7 +3,7 @@ package com.example.permissionsapp.domain
 
 import com.example.permissionsapp.data.remote.places_info_dto.PlaceInfo
 import com.example.permissionsapp.data.remote.places_dto.Places
-import com.example.permissionsapp.data.repository.RepositoryRemote
+import com.example.permissionsapp.data.repositories.RepositoryRemote
 import javax.inject.Inject
 
 class UseCaseRemote @Inject constructor(private val repositoryRemote: RepositoryRemote) {

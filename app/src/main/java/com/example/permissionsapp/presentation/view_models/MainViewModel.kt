@@ -1,10 +1,15 @@
-package com.example.permissionsapp.presentation
+package com.example.permissionsapp.presentation.view_models
 
 import android.graphics.Bitmap
 import android.location.Location
+import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.permissionsapp.data.local.entities.ObjectInfo
@@ -18,6 +23,9 @@ import com.example.permissionsapp.domain.UseCaseRemote
 import com.example.permissionsapp.domain.use_case_local.UseCaseObjectLocal
 import com.example.permissionsapp.domain.use_case_local.UseCasePlacesLocal
 import com.example.permissionsapp.domain.use_case_local.UseCaseRouteLocal
+import com.example.permissionsapp.presentation.utility.Constants.KEY_AVATAR_URL
+import com.example.permissionsapp.presentation.utility.Constants.KEY_FIRST_LAUNCH
+import com.example.permissionsapp.presentation.utility.Constants.KEY_NAME
 import com.example.permissionsapp.presentation.utility.DefaultLocationClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -30,13 +38,14 @@ import javax.inject.Inject
 private const val TAG = "VIEW_MODEL"
 
 @HiltViewModel
-class MyViewModel @Inject constructor(
+class MainViewModel @Inject constructor(
     private val useCaseRemote: UseCaseRemote,
     private val useCasePhotoLocal: UseCasePhotoLocal,
     private val useCaseObjectLocal: UseCaseObjectLocal,
     private val useCasePlacesLocal: UseCasePlacesLocal,
     private val useCaseRouteLocal: UseCaseRouteLocal,
-    private val locationClient: DefaultLocationClient
+    private val locationClient: DefaultLocationClient,
+    private val dataStore: DataStore<androidx.datastore.preferences.core.Preferences>
 ) : ViewModel() {
 
     private val _selectedItem = MutableStateFlow<String?>(null)
@@ -57,23 +66,14 @@ class MyViewModel @Inject constructor(
     private val _isAddedToDb = MutableStateFlow(false)
     val isAddedToDb = _isAddedToDb.asStateFlow()
 
-    private val _isEmailEntered = MutableStateFlow(false)
-    val isEmailEntered = _isEmailEntered.asStateFlow()
-
-    private val _isPasswordEntered = MutableStateFlow(false)
-    val isPasswordEntered = _isPasswordEntered.asStateFlow()
-
-    private val _isNewEmailEntered = MutableStateFlow(false)
-    val isNewEmailEntered = _isNewEmailEntered.asStateFlow()
-
-    private val _isNewPasswordEntered = MutableStateFlow(false)
-    val isNewPasswordEntered = _isNewPasswordEntered.asStateFlow()
-
-    private val _isNameEntered = MutableStateFlow(false)
-    val isNameEntered = _isNameEntered.asStateFlow()
-
     private val _currentUserName = MutableStateFlow<String?>(null)
     val currentUserName = _currentUserName.asStateFlow()
+
+    private val _userAvatarUri = MutableStateFlow<String?>(null)
+    val userAvatarUri = _userAvatarUri.asStateFlow()
+
+    private val _isFirstLaunch = MutableStateFlow(true)
+    val isFirstLaunch = _isFirstLaunch.asStateFlow()
 
     private val _radius = MutableStateFlow(5000)
     val radius = _radius.asStateFlow()
@@ -106,6 +106,9 @@ class MyViewModel @Inject constructor(
         this.viewModelScope.launch {
             getRoutesList()
         }
+        getUserName()
+        getAvatarUri()
+        getLaunchStatus()
     }
 
 
@@ -189,13 +192,19 @@ class MyViewModel @Inject constructor(
 
     fun selectLastRouteName() {
         viewModelScope.launch {
-            useCaseRouteLocal.getAllRoutes().collectLatest {allRoutes->
-            val ids = mutableListOf<Int>()
-            allRoutes.forEach { ids.add(it.id) }
-            val maxId = ids.max()
-            _routeName.value = allRoutes.find { it.id == maxId }?.route_name
-            Log.d(TAG, "ROUTE NAME : ${_routeName.value}")
+            useCaseRouteLocal.getAllRoutes().collectLatest { allRoutes ->
+                val ids = mutableListOf<Int>()
+                allRoutes.forEach { ids.add(it.id) }
+                val maxId = ids.max()
+                _routeName.value = allRoutes.find { it.id == maxId }?.route_name
+                Log.d(TAG, "ROUTE NAME : ${_routeName.value}")
             }
+        }
+    }
+
+    fun finishRoute(routeName: String) {
+        viewModelScope.launch {
+            useCaseRouteLocal.finishRoute(true, routeName)
         }
     }
 
@@ -225,7 +234,7 @@ class MyViewModel @Inject constructor(
         }
     }
 
-    fun addRoutePicture(routePicture: Bitmap, routeName: String){
+    fun addRoutePicture(routePicture: Bitmap, routeName: String) {
         viewModelScope.launch {
             useCaseRouteLocal.addRoutePicture(routePicture, routeName)
         }
@@ -421,44 +430,6 @@ class MyViewModel @Inject constructor(
         locationClient.getLocationUpdates(interval)
 
 
-    //LoginActivity
-    fun setUserName(name: String) {
-        viewModelScope.launch {
-            _currentUserName.value = name
-        }
-    }
-
-    fun switchEmailStatus(status: Boolean) {
-        viewModelScope.launch {
-            _isEmailEntered.value = status
-        }
-    }
-
-    fun switchPasswordStatus(status: Boolean) {
-        viewModelScope.launch {
-            _isPasswordEntered.value = status
-        }
-    }
-
-    fun switchRegistrationEmailStatus(status: Boolean) {
-        viewModelScope.launch {
-            _isNewEmailEntered.value = status
-        }
-    }
-
-    fun switchRegistrationPasswordStatus(status: Boolean) {
-        viewModelScope.launch {
-            _isNewPasswordEntered.value = status
-        }
-    }
-
-    fun switchNameStatus(status: Boolean) {
-        viewModelScope.launch {
-            _isNameEntered.value = status
-        }
-    }
-
-
     //Auxiliary
     private fun getLanguage(): String {
         return if (Locale.getDefault() == Locale("ru", "RU")) RU
@@ -468,6 +439,48 @@ class MyViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     private fun getCurrentDate(): String {
         return SimpleDateFormat(DATE_FORMAT, Locale.getDefault()).format(System.currentTimeMillis())
+    }
+
+    fun saveAvatarUriToDataStore(uri: String) {
+        viewModelScope.launch {
+            val dataStoreKey = stringPreferencesKey(KEY_AVATAR_URL)
+            dataStore.edit {
+                it[dataStoreKey] = uri
+            }
+        }
+    }
+
+    fun saveNameToDataStore(name: String) {
+        viewModelScope.launch {
+            val dataStoreKey = stringPreferencesKey(KEY_NAME)
+            dataStore.edit {
+                it[dataStoreKey] = name
+            }
+        }
+    }
+
+    private fun getUserName() {
+        viewModelScope.launch {
+            val dataStoreKey = stringPreferencesKey(KEY_NAME)
+            val data = dataStore.data.first()
+            _currentUserName.value = data[dataStoreKey]
+        }
+    }
+
+    private fun getAvatarUri() {
+        viewModelScope.launch {
+            val dataStoreKey = stringPreferencesKey(KEY_AVATAR_URL)
+            val data = dataStore.data.first()
+            _userAvatarUri.value = data[dataStoreKey]
+        }
+    }
+
+    private fun getLaunchStatus(){
+        viewModelScope.launch {
+            val dataStoreKey = booleanPreferencesKey(KEY_FIRST_LAUNCH)
+            val data = dataStore.data.first()
+            _isFirstLaunch.value = data[dataStoreKey]!!
+        }
     }
 
 

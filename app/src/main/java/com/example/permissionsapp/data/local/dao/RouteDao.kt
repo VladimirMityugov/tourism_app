@@ -36,6 +36,12 @@ interface RouteDao {
         routeName: String
     )
 
+    @Query("UPDATE route_data SET route_is_finished = :routeStatus WHERE route_name = :routeName")
+    suspend fun finishRoute(
+        routeStatus: Boolean,
+        routeName: String
+    )
+
     @Query("UPDATE route_data SET route_description = :routeDescription WHERE route_name = :routeName")
     suspend fun addRouteDescription(routeDescription: String, routeName: String)
 }

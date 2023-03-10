@@ -9,12 +9,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.Toast
-import androidx.appcompat.widget.AppCompatButton
 import androidx.core.widget.doOnTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
-import com.example.permissionsapp.presentation.MyViewModel
+import com.example.permissionsapp.presentation.view_models.LoginViewModel
 import com.example.permissionsapp.ui.main.MainActivity
 import com.example.tourismApp.R
 import com.example.tourismApp.databinding.FragmentCreateAccountBinding
@@ -32,18 +31,14 @@ class CreateAccountFragment : Fragment() {
     private var _binding: FragmentCreateAccountBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var createAccountButton: AppCompatButton
     private lateinit var name: EditText
-    private lateinit var email: EditText
-    private lateinit var password: EditText
-    private lateinit var loginButton: AppCompatButton
     private lateinit var username: String
     private lateinit var authentification: FirebaseAuth
     private var isEmailEntered: Boolean = false
     private var isPasswordEntered: Boolean = false
     private var isNameEntered: Boolean = false
 
-    private val viewModel: MyViewModel by activityViewModels()
+    private val viewModel: LoginViewModel by activityViewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,15 +56,16 @@ class CreateAccountFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        createAccountButton = binding.createAccount
+        val createAccountButton = binding.createAccount
+        val email = binding.email
+        val password = binding.password
+        val loginButton = binding.goToLoginButton
+
         name = binding.userName
-        email = binding.email
-        password = binding.password
-        loginButton = binding.goToLoginButton
 
         loginButton.setOnClickListener {
             requireActivity().supportFragmentManager.beginTransaction()
-                .replace(R.id.fragmentRegistrationLayout, SignInFragment.newInstance())
+                .replace(R.id.fragmentRegistrationLayout, LoginFragment.newInstance())
                 .commit()
         }
 
@@ -143,9 +139,9 @@ class CreateAccountFragment : Fragment() {
                     ).show()
                 else -> {
                     username = name.text.toString().trim { it <= ' ' }
-                    val email: String = email.text.toString().trim { it <= ' ' }
-                    val password: String = password.text.toString().trim { it <= ' ' }
-                    createAccount(email, password)
+                    val emailFormatted: String = email.text.toString().trim { it <= ' ' }
+                    val passwordFormatted: String = password.text.toString().trim { it <= ' ' }
+                    createAccount(emailFormatted, passwordFormatted)
                 }
             }
         }
@@ -153,23 +149,23 @@ class CreateAccountFragment : Fragment() {
 
     private fun createAccount(email: String, password: String) {
         authentification.createUserWithEmailAndPassword(email, password)
-            .addOnCompleteListener() { task ->
+            .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                                    val user = authentification.currentUser
+                    val user = authentification.currentUser
                     val profileUpdates = userProfileChangeRequest {
                         displayName = username
-                        viewModel.setUserName(username)
                     }
-
                     user!!.updateProfile(profileUpdates)
                         .addOnCompleteListener { task ->
                             if (task.isSuccessful) {
                                 Log.d(TAG, "User profile updated.")
+                                viewModel.saveNameToDataStore(username)
+                                viewModel.updateLaunchStatus(true)
                             }
                         }
                     val intent = Intent(requireContext(), MainActivity::class.java)
                     intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
-                               startActivity(intent)
+                    startActivity(intent)
                     requireActivity().finish()
 
                 } else {

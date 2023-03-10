@@ -2,7 +2,7 @@ package com.example.permissionsapp.ui.main
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.example.permissionsapp.ui.main.login.SignInFragment
+import com.example.permissionsapp.ui.main.login.LoginFragment
 import com.example.tourismApp.R
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -15,7 +15,7 @@ class LoginActivity : AppCompatActivity() {
         setContentView(R.layout.activity_login)
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .replace(R.id.fragmentRegistrationLayout, SignInFragment.newInstance())
+                .replace(R.id.fragmentRegistrationLayout, LoginFragment.newInstance())
                 .commitNow()
         }
     }

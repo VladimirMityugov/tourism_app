@@ -8,7 +8,7 @@ import androidx.appcompat.widget.AppCompatButton
 import androidx.appcompat.widget.AppCompatEditText
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
-import com.example.permissionsapp.presentation.MyViewModel
+import com.example.permissionsapp.presentation.view_models.MainViewModel
 import com.example.tourismApp.databinding.FragmentDescriptionBinding
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import kotlinx.coroutines.flow.collectLatest
@@ -22,7 +22,7 @@ class DescriptionFragment : BottomSheetDialogFragment() {
     private lateinit var saveButton: AppCompatButton
     private var isRouteSelected = false
 
-    private val viewModel: MyViewModel by activityViewModels()
+    private val viewModel: MainViewModel by activityViewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,

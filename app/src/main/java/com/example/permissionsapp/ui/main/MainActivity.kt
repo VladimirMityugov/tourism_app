@@ -2,25 +2,29 @@ package com.example.permissionsapp.ui.main
 
 
 import android.content.Intent
-import android.content.res.ColorStateList
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
-import androidx.navigation.findNavController
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
-import com.example.permissionsapp.presentation.MyViewModel
+import com.example.permissionsapp.presentation.view_models.MainViewModel
+import com.example.permissionsapp.presentation.services.LocationService
 import com.example.permissionsapp.presentation.utility.Constants
 import com.example.tourismApp.R
 import com.example.tourismApp.databinding.ActivityMainBinding
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 
+private const val TAG = "MAIN_ACTIVITY"
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -31,7 +35,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavController
     private lateinit var newRouteButton: FloatingActionButton
 
-    private val viewModel: MyViewModel by viewModels()
+    private val viewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,9 +62,26 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navigationView.setupWithNavController(navController)
 
+        lifecycleScope.launchWhenStarted {
+            viewModel.isFirstLaunch.collectLatest {
+                Log.d(TAG, "Is first launch : $it")
+                if(it){
+                    Log.d(TAG, "Is first launch true")
+                    val navOptions = NavOptions.Builder()
+                        .setPopUpTo(R.id.fragment_profile, true)
+                        .build()
+                    navController.navigate(R.id.action_global_profileFragment, savedInstanceState, navOptions = navOptions)
+                }
+            }
+        }
+
+
 
         newRouteButton = binding.newRouteButton
         newRouteButton.setOnClickListener {
+            if(!LocationService.isTracking.value && !LocationService.isOnRoute.value){
+                viewModel.selectRouteName(null)
+            }
             navController.navigate(R.id.action_global_mapsFragment)
         }
 

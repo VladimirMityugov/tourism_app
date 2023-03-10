@@ -1,9 +1,16 @@
 package com.example.permissionsapp.presentation.utility
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.location.Location
 import android.util.Log
+import android.view.View
+import androidx.core.content.ContextCompat
 import com.example.permissionsapp.presentation.services.Polyline
 import com.example.permissionsapp.presentation.services.Polylines
+import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import kotlin.math.round
 
 
@@ -44,5 +51,34 @@ object Auxiliary {
         Log.d(TAG, "RESULT IS : $result")
         return result
     }
+
+    fun bitmapDescriptorFromVector(
+        context: Context,
+        vectorResId: Int
+    ): BitmapDescriptor? {
+        return ContextCompat.getDrawable(context, vectorResId)?.run {
+            setBounds(0, 0, intrinsicWidth, intrinsicHeight)
+            val bitmap =
+                Bitmap.createBitmap(intrinsicWidth, intrinsicHeight, Bitmap.Config.ARGB_8888)
+            draw(Canvas(bitmap))
+            BitmapDescriptorFactory.fromBitmap(bitmap)
+        }
+    }
+
+    fun getMarkerBitmapFromView(view: View): Bitmap? {
+        view.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+        val width = view.measuredWidth
+        val height = view.measuredHeight
+        if (width <= 0 || height <= 0) {
+            return null
+        }
+        view.layout(0, 0, width, height)
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        view.draw(canvas)
+        return bitmap
+    }
+
+
 
 }

@@ -7,17 +7,15 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
 import android.widget.Toast
-import androidx.appcompat.widget.AppCompatButton
 import androidx.core.widget.doOnTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
-import com.example.permissionsapp.presentation.MyViewModel
+import com.example.permissionsapp.presentation.view_models.LoginViewModel
 import com.example.permissionsapp.ui.main.MainActivity
 import com.example.tourismApp.R
-import com.example.tourismApp.databinding.FragmentSignInBinding
+import com.example.tourismApp.databinding.FragmentLoginBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
@@ -27,26 +25,25 @@ import kotlinx.coroutines.flow.collectLatest
 private const val TAG = "SIGN_IN"
 
 @AndroidEntryPoint
-class SignInFragment : Fragment() {
+class LoginFragment : Fragment() {
 
-    private var _binding: FragmentSignInBinding? = null
+    private var _binding: FragmentLoginBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var loginButton: AppCompatButton
-    private lateinit var email: EditText
-    private lateinit var password: EditText
-    private lateinit var createAccountButton: AppCompatButton
     private lateinit var authentification: FirebaseAuth
+
     private var isEmailEntered: Boolean = false
     private var isPasswordEntered: Boolean = false
 
-    private val viewModel: MyViewModel by activityViewModels()
+    private val viewModel: LoginViewModel by activityViewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         authentification = Firebase.auth
-        val user = Firebase.auth.currentUser
+        val user = authentification.currentUser
         if (user != null) {
+            viewModel.updateLaunchStatus(false)
+            Log.d(TAG, "SET LAUNCH STATUS TO FALSE")
             val intent = Intent(requireContext(), MainActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
             startActivity(intent)
@@ -58,17 +55,17 @@ class SignInFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentSignInBinding.inflate(layoutInflater)
+        _binding = FragmentLoginBinding.inflate(layoutInflater)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        loginButton = binding.login
-        email = binding.email
-        password = binding.password
-        createAccountButton = binding.goToCreateAccountButton
+        val loginButton = binding.login
+        val email = binding.email
+        val password = binding.password
+        val createAccountButton = binding.goToCreateAccountButton
 
         createAccountButton.setOnClickListener {
             requireActivity().supportFragmentManager.beginTransaction()
@@ -97,7 +94,6 @@ class SignInFragment : Fragment() {
             }
         }
 
-
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             viewModel.isEmailEntered.collectLatest { isEmailEntered ->
                 viewModel.isPasswordEntered.collectLatest { isPasswordEntered ->
@@ -114,7 +110,6 @@ class SignInFragment : Fragment() {
             }
         }
 
-
         loginButton.setOnClickListener {
             when {
                 TextUtils.isEmpty(email.text.toString().trim { it <= ' ' }) ->
@@ -130,9 +125,9 @@ class SignInFragment : Fragment() {
                         Toast.LENGTH_SHORT
                     ).show()
                 else -> {
-                    val email: String = email.text.toString().trim { it <= ' ' }.lowercase()
-                    val password: String = password.text.toString().trim { it <= ' ' }
-                    signIn(email, password)
+                    val emailFormatted: String = email.text.toString().trim { it <= ' ' }.lowercase()
+                    val passwordFormatted: String = password.text.toString().trim { it <= ' ' }
+                    signIn(emailFormatted, passwordFormatted)
                 }
             }
         }
@@ -143,6 +138,7 @@ class SignInFragment : Fragment() {
         authentification.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
+                    viewModel.updateLaunchStatus(true)
                     val intent = Intent(requireContext(), MainActivity::class.java)
                     intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
                     startActivity(intent)
@@ -157,7 +153,7 @@ class SignInFragment : Fragment() {
     }
 
     companion object {
-        fun newInstance() = SignInFragment()
+        fun newInstance() = LoginFragment()
     }
 
 }

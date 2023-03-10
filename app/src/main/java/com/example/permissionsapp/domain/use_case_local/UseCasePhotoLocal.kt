@@ -1,7 +1,7 @@
 package com.example.permissionsapp.domain.use_case_local
 
 import com.example.permissionsapp.data.local.entities.PhotoData
-import com.example.permissionsapp.data.repository.repository_local.RepositoryPhotoLocal
+import com.example.permissionsapp.data.repositories.repository_local.RepositoryPhotoLocal
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 

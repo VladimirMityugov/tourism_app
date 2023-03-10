@@ -26,7 +26,9 @@ data class RouteData(
     @ColumnInfo
     val start_date: String,
     @ColumnInfo
-    val end_date: String
+    val end_date: String,
+    @ColumnInfo
+    var route_is_finished: Boolean = false
 )
 
 

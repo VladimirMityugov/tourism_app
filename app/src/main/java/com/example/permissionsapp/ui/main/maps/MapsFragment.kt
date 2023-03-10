@@ -2,14 +2,13 @@ package com.example.permissionsapp.ui.main.maps
 
 import android.annotation.SuppressLint
 import android.app.Dialog
-import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.location.Location
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -17,12 +16,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.appcompat.widget.AppCompatImageView
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentContainerView
@@ -30,7 +29,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
-import com.example.permissionsapp.presentation.MyViewModel
+import com.example.permissionsapp.presentation.view_models.MainViewModel
 import com.example.permissionsapp.presentation.utility.Constants.ACTION_START
 import com.example.permissionsapp.presentation.utility.Constants.ACTION_STOP
 import com.example.permissionsapp.presentation.services.LocationService
@@ -86,7 +85,7 @@ class MapsFragment : Fragment() {
 
     private var totalTime = 0L
 
-    private val viewModel: MyViewModel by activityViewModels()
+    private val viewModel: MainViewModel by activityViewModels()
 
     private val onMapReadyCallback = OnMapReadyCallback {
         map = it
@@ -127,13 +126,13 @@ class MapsFragment : Fragment() {
             true
         }
 
-        map!!.setInfoWindowAdapter(getInfoWindowAdapter())
-        map!!.setOnInfoWindowLongClickListener {
-            createObjectInfoDialog()
-        }
-        map!!.setOnInfoWindowClickListener { marker ->
-            marker.hideInfoWindow()
-        }
+//        map!!.setInfoWindowAdapter(getInfoWindowAdapter())
+//        map!!.setOnInfoWindowLongClickListener {
+//            createObjectInfoDialog()
+//        }
+//        map!!.setOnInfoWindowClickListener { marker ->
+//            marker.hideInfoWindow()
+//        }
 
         //moveCameraToMyLocationByClick
         map!!.setOnMyLocationButtonClickListener {
@@ -279,6 +278,17 @@ class MapsFragment : Fragment() {
             }
         }
 
+
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.getPhotosByRouteName(viewModel.routeName.value.toString())
+                .collectLatest { photos ->
+                    if (photos.isNotEmpty()) {
+                        photos.forEach {
+                            addPhotoToRoute(it.latitude, it.longitude, it.pic_src)
+                        }
+                    }
+                }
+        }
     }
 
 
@@ -344,7 +354,7 @@ class MapsFragment : Fragment() {
                                 MarkerOptions()
                                     .position(placesCoordinates)
                                     .icon(
-                                        bitmapDescriptorFromVector(
+                                        Auxiliary.bitmapDescriptorFromVector(
                                             requireContext(),
                                             R.drawable.dot_icon
                                         )
@@ -443,7 +453,7 @@ class MapsFragment : Fragment() {
                 .position(latLng)
                 .anchor(0.5f, 0.5f)
                 .icon(
-                    bitmapDescriptorFromVector(
+                    Auxiliary.bitmapDescriptorFromVector(
                         requireContext(),
                         R.drawable.current_location_icon
                     )
@@ -456,6 +466,38 @@ class MapsFragment : Fragment() {
             map?.moveCamera(cameraUpdate)
             needAnimateCamera = false
         }
+    }
+
+    private fun addPhotoToRoute(latitude: Double, longitude: Double, picSrc: String) {
+        val latLng = LatLng(latitude, longitude)
+        val markerLayout = layoutInflater.inflate(R.layout.photo_marker, null)
+        markerLayout.measure(
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
+        markerLayout.layout(0, 0, markerLayout.measuredWidth, markerLayout.measuredHeight)
+        val markerImage = markerLayout.findViewById<ImageView>(R.id.marker_image)
+
+        Log.d(TAG, "LAYOUT: $markerLayout")
+        Log.d(TAG, "IMAGE: $markerImage")
+
+        Glide
+            .with(this)
+            .load(Uri.parse(picSrc))
+            .error(R.drawable.ic_baseline_error_outline_24)
+            .into(markerImage)
+
+        val markerIcon = Auxiliary.getMarkerBitmapFromView(markerLayout)
+        Log.d(TAG, "Icon $markerIcon")
+
+        map?.addMarker(
+            MarkerOptions()
+                .position(latLng)
+                .icon(
+                    markerIcon?.let { BitmapDescriptorFactory.fromBitmap(it) }
+                )
+        )
+
     }
 
     private fun getInfoWindowAdapter(): GoogleMap.InfoWindowAdapter {
@@ -530,23 +572,8 @@ class MapsFragment : Fragment() {
     }
 
 
-    private fun bitmapDescriptorFromVector(
-        context: Context,
-        vectorResId: Int
-    ): BitmapDescriptor? {
-        return ContextCompat.getDrawable(context, vectorResId)?.run {
-            setBounds(0, 0, intrinsicWidth, intrinsicHeight)
-            val bitmap =
-                Bitmap.createBitmap(intrinsicWidth, intrinsicHeight, Bitmap.Config.ARGB_8888)
-            draw(Canvas(bitmap))
-            BitmapDescriptorFactory.fromBitmap(bitmap)
-        }
-    }
-
-
     //polylinesHandlers
     private fun moveCameraToUser() {
-        Log.d(TAG, "MOVE CAMERA for route $routePath")
         if (routePath.isNotEmpty() && routePath.last().size > 1) {
             cameraUpdate =
                 CameraUpdateFactory.newLatLngZoom(routePath.last().last(), CAMERA_ZOOM_VALUE)
@@ -571,7 +598,6 @@ class MapsFragment : Fragment() {
 
     private fun addAllPolylines() {
         routePath = LocationService.routePath.value
-        Log.d(TAG, "ADD ALL POLYLINES FOR ROUTE: $routePath")
         for (polyline in routePath) {
             val polylineOptions = PolylineOptions()
                 .color(POLYLINE_COLOR)
@@ -583,13 +609,11 @@ class MapsFragment : Fragment() {
 
     private fun drawLatestPolyline() {
         routePath = LocationService.routePath.value
-        Log.d(TAG, "PATH IS : $routePath")
         addLatestPolyline()
         moveCameraToUser()
     }
 
     private fun zoomToSeeWholeTrack() {
-        Log.d(TAG, "ZOOM")
         routePath = LocationService.routePath.value
         val bounds = LatLngBounds.builder()
         for (polyline in routePath) {
@@ -597,7 +621,6 @@ class MapsFragment : Fragment() {
                 bounds.include(coordinates)
             }
         }
-
         map?.moveCamera(
             CameraUpdateFactory.newLatLngBounds(
                 bounds.build(),
@@ -609,40 +632,26 @@ class MapsFragment : Fragment() {
     }
 
     private fun saveRouteData() {
-        Log.d(TAG, "SAVE ROUTE DATA")
-        routePath = LocationService.routePath.value
-        Log.d(TAG, "ROUTE PATH : $routePath")
+        stopRoute()
+        val routePath = LocationService.routePath.value
         val routeDistance = Auxiliary.calculateRouteDistance(routePath)
-        Log.d(TAG, "ROUTE DISTANCE : $routeDistance")
         val routeName = viewModel.routeName.value
-        Log.d(TAG, "ROUTE NAME : ${viewModel.routeName.value}")
 
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            LocationService.totalTime.collectLatest { totalTime ->
-                Log.d(TAG, "TOTAL TIME : $totalTime OR $totalTime")
+            LocationService.totalTime.collectLatest {
+                val totalTime = it
                 val averageSpeed =
                     Auxiliary.calculateAverageSpeed(totalTime, routeDistance)
-                if (routeName != null) {
-                    viewModel.saveRouteData(
-                        routeDistance, averageSpeed, totalTime,
-                         routeName
-                    )
-                }
-                Log.d(
-                    TAG,
-                    "ROUTE DATA IS : Time: $totalTime, Distance: $routeDistance, Speed: $averageSpeed, Route name: $routeName, Route picture: $routePicture"
-                )
+                viewModel.saveRouteData(routeDistance, averageSpeed, it, routeName!!)
             }
         }
         map?.snapshot { bmp ->
-            Log.d(TAG, "BITMAP : $bmp")
             viewLifecycleOwner.lifecycleScope.launchWhenStarted {
                 val result = async { bmp }
                 routePicture = result.await()
-                viewModel.addRoutePicture(result.await()!!, routeName!!)
+                viewModel.addRoutePicture(routePicture!!, routeName!!)
+                viewModel.finishRoute(routeName)
                 viewModel.selectRouteName(null)
-                Log.d(TAG, "ROUTE NAME CLEAR")
-
             }
         }
         Snackbar.make(requireContext(), mapView, "Route data is saved", Snackbar.LENGTH_LONG).show()
@@ -651,65 +660,62 @@ class MapsFragment : Fragment() {
 
     //buttonClicksHandlers
     private fun onSaveButtonClick(inputField: TextView, dialog: Dialog) {
+
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.allRoutes.collectLatest { routes ->
-                val newRouteName = inputField.text
-                    .trim()
-                    .toString()
-                    .lowercase(Locale.ROOT)
-                    .replaceFirstChar {
-                        it.uppercaseChar()
+            viewModel.getAllRoutes().collectLatest { routes ->
+                viewModel.routeName.collectLatest { name ->
+                    if (name == null) {
+                        val newRouteName = inputField.text
+                            .trim()
+                            .toString()
+                            .lowercase(Locale.ROOT)
+                            .replaceFirstChar {
+                                it.uppercaseChar()
+                            }
+                        val routeExists = routes.find { it.route_name == newRouteName }
+                        if (newRouteName.isNotEmpty()) {
+                            if (routeExists == null) {
+                                viewModel.selectRouteName(newRouteName)
+                                viewModel.insertRoute(
+                                    routeName = newRouteName
+                                )
+                                startRoute()
+                                dialog.dismiss()
+                            } else {
+                                Toast.makeText(
+                                    requireContext(),
+                                    "Route with this name already exists",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        } else {
+                            Toast.makeText(
+                                requireContext(),
+                                "Route name could not be empty",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
-                val routeExists = routes.find { it.route_name == newRouteName }
-                if (newRouteName.isNotEmpty()) {
-                    if (routeExists == null) {
-                        viewModel.selectRouteName(newRouteName)
-                        viewModel.insertRoute(
-                            routeName = newRouteName
-                        )
-                        startRoute()
-                        dialog.dismiss()
-                    } else {
-                        Toast.makeText(
-                            requireContext(),
-                            "Route with this name already exists",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                } else {
-                    Toast.makeText(
-                        requireContext(),
-                        "Route name could not be empty",
-                        Toast.LENGTH_SHORT
-                    ).show()
                 }
             }
         }
     }
 
+
     private fun onStopButtonClick() {
-
-        zoomToSeeWholeTrack()
-        saveRouteData()
-        stopRoute()
-        routePath.clear()
-        Log.d(TAG, "ROUTE PATH CLEAR")
-        map?.clear()
-        Log.d(TAG, "MAP CLEAR")
-        Log.d(TAG, "ROUTE PICTURE : $routePicture")
-
-
+        if (LocationService.isOnRoute.value) {
+            zoomToSeeWholeTrack()
+            saveRouteData()
+            routePath.clear()
+            map?.clear()
+        }
     }
 
     private fun onStartButtonClick() {
-        if (viewModel.routeName.value != null) {
-            if (!routeIsStarted) {
-                startRoute()
-            } else {
-                pauseRoute()
-            }
-        } else {
-            createRouteNameAlertDialog()
+        when {
+            !routeIsStarted && viewModel.routeName.value == null -> createRouteNameAlertDialog()
+            !routeIsStarted && viewModel.routeName.value != null -> startRoute()
+            routeIsStarted && viewModel.routeName.value != null -> pauseRoute()
         }
     }
 

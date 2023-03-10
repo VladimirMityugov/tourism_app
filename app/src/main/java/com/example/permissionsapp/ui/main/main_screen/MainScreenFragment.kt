@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import android.view.animation.BounceInterpolator
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.AppCompatButton
 import androidx.appcompat.widget.AppCompatImageButton
@@ -21,10 +22,10 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
-import com.example.permissionsapp.data.local.entities.PhotoData
 import com.example.permissionsapp.data.local.entities.RouteData
-import com.example.permissionsapp.presentation.MyViewModel
+import com.example.permissionsapp.presentation.view_models.MainViewModel
 import com.example.permissionsapp.presentation.RoutesAdapter
+import com.example.permissionsapp.presentation.services.LocationService
 import com.example.permissionsapp.presentation.utility.Constants.RATIONALE_FOR_LOCATION
 import com.example.permissionsapp.presentation.utility.Constants.REQUEST_CODE_LOCATION_PERMISSION
 import com.example.permissionsapp.presentation.utility.hasLocationPermission
@@ -60,7 +61,7 @@ class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
     )
 
 
-    private val viewModel: MyViewModel by activityViewModels()
+    private val viewModel: MainViewModel by activityViewModels()
 
 
     override fun onCreateView(
@@ -91,13 +92,19 @@ class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
         }
 
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.getAllRoutes().collectLatest {
-                if (it.isNotEmpty()) {
+            viewModel.getAllRoutes().collectLatest { routes ->
+                if (routes.isNotEmpty()) {
+                    val finishedRoutes = mutableListOf<RouteData>()
+                    routes.forEach { if (it.route_is_finished && !finishedRoutes.contains(it)) {
+                        Log.d(TAG, "$it")
+                        finishedRoutes.add(it)
+                    } }
                     routesRecyclerView.visibility = View.VISIBLE
                     scrollView.visibility = View.VISIBLE
                     infoField.visibility = View.INVISIBLE
                     firstRouteButton.visibility = View.INVISIBLE
-                    routesAdapter.submitList(it)
+                    routesAdapter.submitList(finishedRoutes)
+
                 } else {
                     routesRecyclerView.visibility = View.GONE
                     scrollView.visibility = View.GONE
@@ -149,9 +156,19 @@ class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
 
 
     private fun onRouteClick(route: RouteData) {
-        viewModel.selectRouteName(route.route_name)
-        viewModel.getPhotosByRouteName(route.route_name)
-        findNavController().navigate(R.id.action_main_to_routeFragment)
+        if (!LocationService.isOnRoute.value && !LocationService.isTracking.value) {
+            viewModel.selectRouteName(route.route_name)
+            viewModel.getPhotosByRouteName(route.route_name)
+            findNavController().navigate(R.id.action_main_to_routeFragment)
+        } else {
+            Toast.makeText(
+                requireContext(),
+                "Please, finish current route first",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
+
     }
 
     private fun onRouteDeleteClick(route: RouteData) {

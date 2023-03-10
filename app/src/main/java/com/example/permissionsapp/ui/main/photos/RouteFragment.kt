@@ -20,7 +20,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import com.example.permissionsapp.data.local.entities.PhotoData
-import com.example.permissionsapp.presentation.MyViewModel
+import com.example.permissionsapp.presentation.view_models.MainViewModel
 import com.example.permissionsapp.presentation.PhotoAdapter
 import com.example.tourismApp.R
 import com.example.tourismApp.databinding.FragmentRouteBinding
@@ -65,7 +65,7 @@ class RouteFragment : Fragment() {
     private lateinit var addDescriptionButton: AppCompatImageButton
     private lateinit var addDescriptionTitle: AppCompatTextView
 
-    private val viewModel: MyViewModel by activityViewModels()
+    private val viewModel: MainViewModel by activityViewModels()
 
     @RequiresApi(Build.VERSION_CODES.O)
     private val photoAdapter = PhotoAdapter(
@@ -120,18 +120,28 @@ class RouteFragment : Fragment() {
                 if (name != null) {
                     routeName.text = name
                     viewModel.getRouteInfoByName(name).collectLatest { routeInfo ->
-                        routeAvgSpeed.text = buildString {
-                            append("Average speed (km/h): ")
-                            append(routeInfo.route_average_speed)
+                        if (routeInfo.route_is_finished) {
+                            routeAvgSpeed.visibility = View.VISIBLE
+                            routeDuration.visibility = View.VISIBLE
+                            routeDistance.visibility - View.VISIBLE
+                            routeAvgSpeed.text = buildString {
+                                append("Average speed (km/h): ")
+                                append(routeInfo.route_average_speed)
+                            }
+                            routeDuration.text = buildString {
+                                append("Route duration (minutes): ")
+                                append(round((routeInfo.route_time!! / 1000F / 60)*100) / 100)
+                            }
+                            routeDistance.text = buildString {
+                                append("Route distance (meters): ")
+                                append(routeInfo.route_distance!!.toInt())
+                            }
+                        } else {
+                            routeAvgSpeed.visibility = View.INVISIBLE
+                            routeDuration.visibility = View.INVISIBLE
+                            routeDistance.visibility - View.INVISIBLE
                         }
-                        routeDuration.text = buildString {
-                            append("Route duration (minutes): ")
-                            append(round(routeInfo.route_time!! / 1000F / 60) / 100 )
-                        }
-                        routeDistance.text = buildString {
-                            append("Route distance (meters): ")
-                            append(routeInfo.route_distance!!.toInt())
-                        }
+
                         val routeDescription =
                             routeInfo.route_description
                         if (routeDescription != null) {

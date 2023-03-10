@@ -1,4 +1,4 @@
-package com.example.permissionsapp.data.repository.repository_local
+package com.example.permissionsapp.data.repositories.repository_local
 
 
 import com.example.permissionsapp.data.local.dao.PlacesKindsDao

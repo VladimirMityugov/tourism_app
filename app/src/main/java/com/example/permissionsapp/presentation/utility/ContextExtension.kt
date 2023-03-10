@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.example.permissionsapp.presentation.utility.Constants.REQUIRED_PERMISSIONS
 
 private const val TAG = "LOCATION_PERMISSION"
 fun Context.hasLocationPermission(): Boolean {
@@ -39,3 +40,16 @@ fun Context.hasLocationPermission(): Boolean {
         }
     }
 }
+
+fun Context.hasReadPermission(): Boolean {
+
+    return REQUIRED_PERMISSIONS.all { permission ->
+        ContextCompat.checkSelfPermission(
+            this,
+            permission
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+}
+
+

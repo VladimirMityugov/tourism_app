@@ -50,4 +50,6 @@
     <string name="route_distance">route_distance</string>
     <string name="route_duration">route_duration</string>
     <string name="route_avg_speed">route_avg_speed</string>
+    <string name="apply_changes">APPLY CHANGES</string>
+    <string name="change_photo">change photo</string>
 </resources>

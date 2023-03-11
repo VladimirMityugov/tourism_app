@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.permissionsapp.data.user_preferences.UserPreferences
 import com.example.permissionsapp.presentation.utility.Constants
 import com.example.permissionsapp.presentation.utility.Constants.KEY_FIRST_LAUNCH
 import com.example.permissionsapp.presentation.utility.Constants.KEY_NAME
@@ -19,7 +20,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-  private val dataStore: DataStore<Preferences>
+  private val dataStore: DataStore<UserPreferences>
 ): ViewModel() {
 
 
@@ -73,19 +74,21 @@ class LoginViewModel @Inject constructor(
 
   fun saveNameToDataStore(name: String){
     viewModelScope.launch {
-      val dataStoreKey = stringPreferencesKey(KEY_NAME)
-      dataStore.edit {
-        it[dataStoreKey] = name
-      }
+     dataStore.updateData {
+       it.copy(
+         user_name = name
+       )
+     }
     }
   }
 
   fun updateLaunchStatus(isFirstLaunch: Boolean){
     viewModelScope.launch {
-      val dataStoreKey = booleanPreferencesKey(KEY_FIRST_LAUNCH)
-      dataStore.edit {
-        it[dataStoreKey] = isFirstLaunch
-      }
+    dataStore.updateData {
+      it.copy(
+        isFirstLaunch = isFirstLaunch
+      )
+    }
     }
   }
 

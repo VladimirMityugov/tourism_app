@@ -18,6 +18,7 @@ import com.example.permissionsapp.data.local.entities.PlacesForSearch
 import com.example.permissionsapp.data.local.entities.RouteData
 import com.example.permissionsapp.data.remote.places_dto.Places
 import com.example.permissionsapp.data.remote.places_info_dto.PlaceInfo
+import com.example.permissionsapp.data.user_preferences.UserPreferences
 import com.example.permissionsapp.domain.use_case_local.UseCasePhotoLocal
 import com.example.permissionsapp.domain.UseCaseRemote
 import com.example.permissionsapp.domain.use_case_local.UseCaseObjectLocal
@@ -45,7 +46,7 @@ class MainViewModel @Inject constructor(
     private val useCasePlacesLocal: UseCasePlacesLocal,
     private val useCaseRouteLocal: UseCaseRouteLocal,
     private val locationClient: DefaultLocationClient,
-    private val dataStore: DataStore<androidx.datastore.preferences.core.Preferences>
+    private val dataStore: DataStore<UserPreferences>
 ) : ViewModel() {
 
     private val _selectedItem = MutableStateFlow<String?>(null)
@@ -106,9 +107,9 @@ class MainViewModel @Inject constructor(
         this.viewModelScope.launch {
             getRoutesList()
         }
-        getUserName()
-        getAvatarUri()
-        getLaunchStatus()
+//        getUserName()
+//        getAvatarUri()
+//        getLaunchStatus()
     }
 
 
@@ -443,45 +444,26 @@ class MainViewModel @Inject constructor(
 
     fun saveAvatarUriToDataStore(uri: String) {
         viewModelScope.launch {
-            val dataStoreKey = stringPreferencesKey(KEY_AVATAR_URL)
-            dataStore.edit {
-                it[dataStoreKey] = uri
-            }
+         dataStore.updateData {
+             it.copy(
+                 user_avatar_uri = uri
+             )
+         }
         }
     }
 
     fun saveNameToDataStore(name: String) {
         viewModelScope.launch {
-            val dataStoreKey = stringPreferencesKey(KEY_NAME)
-            dataStore.edit {
-                it[dataStoreKey] = name
-            }
+         dataStore.updateData {
+             it.copy(
+                 user_name = name
+             )
+         }
         }
     }
 
-    private fun getUserName() {
-        viewModelScope.launch {
-            val dataStoreKey = stringPreferencesKey(KEY_NAME)
-            val data = dataStore.data.first()
-            _currentUserName.value = data[dataStoreKey]
-        }
-    }
+    suspend fun getDataStore() = dataStore.data
 
-    private fun getAvatarUri() {
-        viewModelScope.launch {
-            val dataStoreKey = stringPreferencesKey(KEY_AVATAR_URL)
-            val data = dataStore.data.first()
-            _userAvatarUri.value = data[dataStoreKey]
-        }
-    }
-
-    private fun getLaunchStatus(){
-        viewModelScope.launch {
-            val dataStoreKey = booleanPreferencesKey(KEY_FIRST_LAUNCH)
-            val data = dataStore.data.first()
-            _isFirstLaunch.value = data[dataStoreKey]!!
-        }
-    }
 
 
     companion object {

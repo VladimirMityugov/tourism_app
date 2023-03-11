@@ -22,10 +22,12 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.permissionsapp.data.local.entities.RouteData
 import com.example.permissionsapp.presentation.view_models.MainViewModel
 import com.example.permissionsapp.presentation.RoutesAdapter
 import com.example.permissionsapp.presentation.services.LocationService
+import com.example.permissionsapp.presentation.utility.Constants
 import com.example.permissionsapp.presentation.utility.Constants.RATIONALE_FOR_LOCATION
 import com.example.permissionsapp.presentation.utility.Constants.REQUEST_CODE_LOCATION_PERMISSION
 import com.example.permissionsapp.presentation.utility.hasLocationPermission
@@ -35,6 +37,7 @@ import com.example.tourismApp.databinding.FragmentMainScreenBinding
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import pub.devrel.easypermissions.AppSettingsDialog
 import pub.devrel.easypermissions.EasyPermissions
 
@@ -47,22 +50,12 @@ class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
     private var _binding: FragmentMainScreenBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var username: TextView
-    private lateinit var signOut: AppCompatButton
-    private lateinit var firebaseAuth: FirebaseAuth
-    private lateinit var routesRecyclerView: RecyclerView
-    private lateinit var firstRouteButton: AppCompatImageButton
-    private lateinit var infoField: AppCompatTextView
-    private lateinit var scrollView: ScrollView
-
     private val routesAdapter = RoutesAdapter(
         onItemClick = { route -> onRouteClick(route) },
         onDeleteRouteClick = { route -> onRouteDeleteClick(route) }
     )
 
-
     private val viewModel: MainViewModel by activityViewModels()
-
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -75,30 +68,27 @@ class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        username = binding.userTitle
-        signOut = binding.signOutButton
-        firebaseAuth = FirebaseAuth.getInstance()
-        routesRecyclerView = binding.routesRecyclerView
-        firstRouteButton = binding.firstRouteButton
-        infoField = binding.infoField
-        scrollView = binding.scrollView
+        val userName = binding.userName
+        val userAvatar = binding.userAvatar
+        val routesRecyclerView = binding.routesRecyclerView
+        val firstRouteButton = binding.firstRouteButton
+        val infoField = binding.infoField
+        val scrollView = binding.scrollView
 
         routesRecyclerView.adapter = routesAdapter
 
-        signOut.setOnClickListener {
-            firebaseAuth.signOut()
-            startActivity(Intent(requireContext(), LoginActivity::class.java))
-            requireActivity().finish()
-        }
 
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+        //displayRoutesIfAny
+        viewLifecycleOwner.lifecycleScope.launch {
             viewModel.getAllRoutes().collectLatest { routes ->
                 if (routes.isNotEmpty()) {
                     val finishedRoutes = mutableListOf<RouteData>()
-                    routes.forEach { if (it.route_is_finished && !finishedRoutes.contains(it)) {
-                        Log.d(TAG, "$it")
-                        finishedRoutes.add(it)
-                    } }
+                    routes.forEach {
+                        if (it.route_is_finished && !finishedRoutes.contains(it)) {
+                            Log.d(TAG, "$it")
+                            finishedRoutes.add(it)
+                        }
+                    }
                     routesRecyclerView.visibility = View.VISIBLE
                     scrollView.visibility = View.VISIBLE
                     infoField.visibility = View.INVISIBLE
@@ -111,31 +101,47 @@ class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
                     infoField.visibility = View.VISIBLE
                     firstRouteButton.visibility = View.VISIBLE
                 }
-
             }
         }
 
+
+        //setUserName
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.getDataStore().collectLatest {
+                val newName = it.user_name
+                if (newName.isNotEmpty()) {
+                    userName.text = newName
+                } else {
+                    userName.text = ""
+                }
+            }
+        }
+
+
+        //setUserAvatar
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.getDataStore().collectLatest {
+                val uri = it.user_avatar_uri
+                if (uri.isNotEmpty()) {
+                    Glide
+                        .with(userAvatar)
+                        .load(uri)
+                        .centerCrop()
+                        .into(userAvatar)
+                } else {
+                    Glide
+                        .with(userAvatar)
+                        .load(Constants.AVATAR)
+                        .centerCrop()
+                        .into(userAvatar)
+                }
+            }
+        }
 
         firstRouteButton.setOnClickListener {
             if (requireContext().hasLocationPermission()) {
                 findNavController().navigate(R.id.action_main_to_maps)
             } else requestPermissions()
-        }
-
-
-        if (firebaseAuth.currentUser?.displayName == null) {
-            viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-                viewModel.currentUserName.collectLatest { currentName ->
-
-                    if (currentName != null) {
-                        username.isVisible = true
-                        username.text = currentName
-                    }
-                    username.isVisible = false
-                }
-            }
-        } else {
-            username.text = firebaseAuth.currentUser?.displayName.toString()
         }
 
         firstRouteButton
@@ -167,8 +173,6 @@ class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
                 Toast.LENGTH_SHORT
             ).show()
         }
-
-
     }
 
     private fun onRouteDeleteClick(route: RouteData) {

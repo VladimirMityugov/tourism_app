@@ -5,11 +5,11 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.DataStoreFactory
 import androidx.datastore.dataStoreFile
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.room.Room
 import com.example.permissionsapp.data.local.MyDataBase
 import com.example.permissionsapp.data.remote.PlacesApi
+import com.example.permissionsapp.data.user_preferences.UserPreferences
+import com.example.permissionsapp.data.user_preferences.UserPreferencesSerializer
 import com.example.permissionsapp.presentation.utility.Constants.DATA_STORE_NAME
 import com.example.permissionsapp.presentation.utility.DefaultLocationClient
 import com.google.android.gms.location.LocationServices
@@ -63,9 +63,10 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideDataStore(@ApplicationContext context: Context): DataStore<androidx.datastore.preferences.core.Preferences> {
-        return PreferenceDataStoreFactory.create(
-            produceFile = {context.preferencesDataStoreFile(DATA_STORE_NAME)}
+    fun provideDataStore(@ApplicationContext context: Context): DataStore<UserPreferences> {
+        return DataStoreFactory.create(
+            produceFile = {context.dataStoreFile(DATA_STORE_NAME)},
+            serializer = UserPreferencesSerializer
         )
     }
 

@@ -10,10 +10,14 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.datastore.core.DataStore
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.bumptech.glide.Glide
+import com.example.permissionsapp.data.user_preferences.UserPreferences
 import com.example.permissionsapp.presentation.utility.Constants.AVATAR
 import com.example.permissionsapp.presentation.utility.Constants.REQUIRED_PERMISSIONS
 import com.example.permissionsapp.presentation.utility.hasReadPermission
@@ -24,6 +28,9 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class ProfileFragment : Fragment() {
@@ -82,39 +89,43 @@ class ProfileFragment : Fragment() {
 
         }
 
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.currentUserName.collectLatest { userName ->
-                if(userName!=null){
-                    name.setText(userName)
-                }
-            }
+        viewLifecycleOwner.lifecycleScope.launch {
+          viewModel.getDataStore().collectLatest {
+              val newName = it.user_name
+              if (newName.isNotEmpty()) {
+                  name.setText(newName)
+              }
+          }
+
+
         }
 
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.currentUserName.collectLatest { name ->
-                viewModel.isFirstLaunch.collectLatest { isFirstLaunch ->
-                    if (isFirstLaunch && name != null) {
-                        welcomeMessage.text = buildString {
-                            append("Welcome, ")
-                            append(name)
-                        }
-                    } else {
-                        welcomeMessage.visibility = View.INVISIBLE
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.getDataStore().collectLatest {
+                val newName = it.user_name
+                val isFirstLaunch = it.isFirstLaunch
+                if (isFirstLaunch && newName.isNotEmpty()) {
+                    welcomeMessage.text = buildString {
+                        append("Welcome, ")
+                        append(newName)
                     }
+                } else {
+                    welcomeMessage.visibility = View.INVISIBLE
                 }
             }
         }
 
 
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.userAvatarUri.collectLatest { uri ->
-                if (uri != null) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.getDataStore().collectLatest {
+                val uri = it.user_avatar_uri
+                if (uri.isNotEmpty()) {
                     Glide
                         .with(userAvatar)
                         .load(uri)
                         .centerCrop()
                         .into(userAvatar)
-                }else{
+                } else {
                     Glide
                         .with(userAvatar)
                         .load(AVATAR)
@@ -124,8 +135,8 @@ class ProfileFragment : Fragment() {
             }
         }
 
-
     }
+
     private fun onChangePhotoClick() {
         if (requireContext().hasReadPermission()) {
             photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
@@ -165,7 +176,6 @@ class ProfileFragment : Fragment() {
     private fun onApplyChangesClick(name: String) {
         viewModel.saveNameToDataStore(name)
     }
-
 
 
     override fun onDestroy() {

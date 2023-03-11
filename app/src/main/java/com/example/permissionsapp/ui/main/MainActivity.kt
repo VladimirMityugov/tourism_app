@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.viewModels
+import androidx.datastore.core.DataStore
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
@@ -14,6 +15,7 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
+import com.example.permissionsapp.data.user_preferences.UserPreferences
 import com.example.permissionsapp.presentation.view_models.MainViewModel
 import com.example.permissionsapp.presentation.services.LocationService
 import com.example.permissionsapp.presentation.utility.Constants
@@ -23,6 +25,9 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 private const val TAG = "MAIN_ACTIVITY"
 
@@ -62,16 +67,17 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navigationView.setupWithNavController(navController)
 
-        lifecycleScope.launchWhenStarted {
-            viewModel.isFirstLaunch.collectLatest {
-                Log.d(TAG, "Is first launch : $it")
-                if(it){
-                    Log.d(TAG, "Is first launch true")
-                    val navOptions = NavOptions.Builder()
-                        .setPopUpTo(R.id.fragment_profile, true)
-                        .build()
-                    navController.navigate(R.id.action_global_profileFragment, savedInstanceState, navOptions = navOptions)
-                }
+        lifecycleScope.launch {
+            if (viewModel.getDataStore().first().isFirstLaunch) {
+                Log.d(TAG, "Is first launch true")
+                val navOptions = NavOptions.Builder()
+                    .setPopUpTo(R.id.fragment_profile, true)
+                    .build()
+                navController.navigate(
+                    R.id.action_global_profileFragment,
+                    savedInstanceState,
+                    navOptions = navOptions
+                )
             }
         }
 
@@ -79,7 +85,7 @@ class MainActivity : AppCompatActivity() {
 
         newRouteButton = binding.newRouteButton
         newRouteButton.setOnClickListener {
-            if(!LocationService.isTracking.value && !LocationService.isOnRoute.value){
+            if (!LocationService.isTracking.value && !LocationService.isOnRoute.value) {
                 viewModel.selectRouteName(null)
             }
             navController.navigate(R.id.action_global_mapsFragment)

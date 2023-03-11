@@ -16,6 +16,12 @@ Auth, Crashlytics.**
 <p align="left">
 <img src="https://user-images.githubusercontent.com/118269028/216836609-4057e575-52b2-4edb-8e18-530401779cc0.jpg" width=30% height=30%>
  </p>
+ 
+ **Profile Screen**
+
+<p align="left">
+<img src="https://user-images.githubusercontent.com/118269028/224482070-35bb8bcd-4005-4c4b-9507-223223878f59.jpg" width=30% height=30%>
+ </p>
 
 
 **Make and store photos, add description**

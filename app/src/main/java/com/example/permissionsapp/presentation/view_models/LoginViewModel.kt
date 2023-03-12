@@ -1,16 +1,9 @@
 package com.example.permissionsapp.presentation.view_models
 
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.permissionsapp.data.user_preferences.UserPreferences
-import com.example.permissionsapp.presentation.utility.Constants
-import com.example.permissionsapp.presentation.utility.Constants.KEY_FIRST_LAUNCH
-import com.example.permissionsapp.presentation.utility.Constants.KEY_NAME
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

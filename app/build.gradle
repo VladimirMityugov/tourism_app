@@ -88,9 +88,6 @@ dependencies {
      // Google Sign In SDK
     implementation 'com.google.android.gms:play-services-auth:20.4.1'
 
-    // Easy Permissions
-    implementation 'pub.devrel:easypermissions:3.0.0'
-
     //Firebase Sign in
     implementation 'com.google.firebase:firebase-auth-ktx'
     implementation 'com.firebaseui:firebase-ui-auth:7.2.0'

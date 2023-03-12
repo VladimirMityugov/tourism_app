@@ -1,51 +1,40 @@
 package com.example.permissionsapp.ui.main.main_screen
 
 
-import android.content.Intent
-import android.os.Build
+import android.Manifest
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.BounceInterpolator
-import android.widget.ScrollView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.widget.AppCompatButton
-import androidx.appcompat.widget.AppCompatImageButton
-import androidx.appcompat.widget.AppCompatTextView
-import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.permissionsapp.data.local.entities.RouteData
 import com.example.permissionsapp.presentation.view_models.MainViewModel
 import com.example.permissionsapp.presentation.RoutesAdapter
 import com.example.permissionsapp.presentation.services.LocationService
 import com.example.permissionsapp.presentation.utility.Constants
-import com.example.permissionsapp.presentation.utility.Constants.RATIONALE_FOR_LOCATION
-import com.example.permissionsapp.presentation.utility.Constants.REQUEST_CODE_LOCATION_PERMISSION
-import com.example.permissionsapp.presentation.utility.hasLocationPermission
-import com.example.permissionsapp.ui.main.LoginActivity
+import com.example.permissionsapp.presentation.utility.Constants.REQUIRED_LOCATION_PERMISSIONS
+import com.example.permissionsapp.presentation.utility.permissions.*
+import com.example.permissionsapp.presentation.view_models.PermissionsViewModel
 import com.example.tourismApp.R
 import com.example.tourismApp.databinding.FragmentMainScreenBinding
-import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import pub.devrel.easypermissions.AppSettingsDialog
-import pub.devrel.easypermissions.EasyPermissions
+
 
 
 private const val TAG = "MAIN_SCREEN"
 
 @AndroidEntryPoint
-class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
+class MainScreenFragment : Fragment() {
 
     private var _binding: FragmentMainScreenBinding? = null
     private val binding get() = _binding!!
@@ -56,6 +45,19 @@ class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
     )
 
     private val viewModel: MainViewModel by activityViewModels()
+    private val permissionsViewModel: PermissionsViewModel by activityViewModels()
+
+    private val permissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+            it.keys.forEach { permission ->
+                permissionsViewModel.onPermissionResult(
+                    permission, it[permission] == true
+                )
+                if(it[permission] == true){
+                    permissionsViewModel.dismissDialog(permission)
+                }
+            }
+        }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -138,10 +140,46 @@ class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
             }
         }
 
+        lifecycleScope.launch {
+            permissionsViewModel.permissionsList.collectLatest {
+                Log.d(TAG, "PERMISSIONS LIST: $it")
+                it
+                    .reversed()
+                    .forEach { permission ->
+                        providePermissionDialog(
+                            requireContext(),
+                            permissionDialogTextProvider = when (permission) {
+                                Manifest.permission.ACCESS_COARSE_LOCATION -> {
+                                    AccessCoarseLocationPermission()
+                                }
+                                Manifest.permission.ACCESS_FINE_LOCATION -> {
+                                    AccessFineLocationPermission()
+                                }
+                                Manifest.permission.ACCESS_BACKGROUND_LOCATION -> {
+                                    AccessBackgroundLocationPermission()
+                                }
+                                else -> {
+                                    return@forEach
+                                }
+                            },
+                            isPermanentlyDeclined = !shouldShowRequestPermissionRationale(permission),
+                            onOkClick = {
+                                permissionsViewModel.dismissDialog(permission)
+                                permissionLauncher.launch(arrayOf(permission))
+                            },
+                            onDismissClick = { permissionsViewModel.dismissDialog(permission) },
+                            onGoToAppSettingsCLick = { requireActivity().openAppSettings() }
+                        )
+                    }
+            }
+        }
+
         firstRouteButton.setOnClickListener {
             if (requireContext().hasLocationPermission()) {
                 findNavController().navigate(R.id.action_main_to_maps)
-            } else requestPermissions()
+            } else {
+                permissionLauncher.launch(REQUIRED_LOCATION_PERMISSIONS)
+            }
         }
 
         firstRouteButton
@@ -180,62 +218,8 @@ class MainScreenFragment : Fragment(), EasyPermissions.PermissionCallbacks {
         viewModel.deleteRouteByName(route.route_name)
     }
 
-
-    private fun requestPermissions() {
-        if (requireContext().hasLocationPermission()) {
-            return
-        }
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            EasyPermissions.requestPermissions(
-                this,
-                RATIONALE_FOR_LOCATION,
-                REQUEST_CODE_LOCATION_PERMISSION,
-                android.Manifest.permission.ACCESS_COARSE_LOCATION,
-                android.Manifest.permission.ACCESS_FINE_LOCATION
-            )
-        } else {
-            EasyPermissions.requestPermissions(
-                this,
-                RATIONALE_FOR_LOCATION,
-                REQUEST_CODE_LOCATION_PERMISSION,
-                android.Manifest.permission.ACCESS_COARSE_LOCATION,
-                android.Manifest.permission.ACCESS_FINE_LOCATION,
-                android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
-            )
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this)
-    }
-
-    private val launcher =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-            Log.d(TAG, "Values : ${it.entries}")
-        }
-
-
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-    }
-
-    override fun onPermissionsGranted(requestCode: Int, perms: MutableList<String>) {
-        Log.d(TAG, "PERMISSIONS ARE GRANTED")
-    }
-
-    override fun onPermissionsDenied(requestCode: Int, perms: MutableList<String>) {
-        if (EasyPermissions.somePermissionPermanentlyDenied(this, perms)) {
-            AppSettingsDialog.Builder(this)
-                .build()
-                .show()
-        } else {
-            requestPermissions()
-        }
     }
 }

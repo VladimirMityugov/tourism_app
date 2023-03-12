@@ -2,16 +2,16 @@
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_activated="true">
         <shape android:shape="oval">
-            <solid android:color="#57BB7C"/>
-            <stroke android:color="@color/myOrange"
-                android:width="1dp"/>
+            <solid android:color="@color/white"/>
+            <stroke android:color="@color/myGreen"
+                android:width="2dp"/>
         </shape>
     </item>
 
     <item android:state_activated="false">
         <shape android:shape="oval">
             <solid android:color="@color/white"/>
-            <stroke android:color="@color/myOrange"
+            <stroke android:color="@color/myBlack"
                 android:width="1dp"/>
         </shape>
     </item>

@@ -4,7 +4,6 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.DialogInterface
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
@@ -12,10 +11,8 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
 import android.widget.ImageView
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.widget.AppCompatImageButton
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -24,17 +21,27 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
+import com.example.permissionsapp.presentation.utility.Constants
 import com.example.permissionsapp.presentation.view_models.MainViewModel
 import com.example.permissionsapp.presentation.utility.Constants.INTERVAL_FOR_LOCATION_UPDATES
+import com.example.permissionsapp.presentation.utility.Constants.REQUIRED_CAMERA_PERMISSIONS
+import com.example.permissionsapp.presentation.utility.Constants.REQUIRED_READ_PERMISSIONS
+import com.example.permissionsapp.presentation.utility.Constants.REQUIRED_WRITE_PERMISSIONS
 import com.example.permissionsapp.presentation.utility.MyLocation
+import com.example.permissionsapp.presentation.utility.permissions.*
+import com.example.permissionsapp.presentation.view_models.PermissionsViewModel
 import com.example.tourismApp.R
 import com.example.tourismApp.databinding.FragmentPhotoBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -57,20 +64,35 @@ class PhotoFragment : Fragment() {
 
     private var _binding: FragmentPhotoBinding? = null
     private val binding get() = _binding!!
+
+    private lateinit var outputDirectory: File
+
     private val currentDate = SimpleDateFormat(
         DATE_FORMAT,
         Locale.getDefault()
     ).format(System.currentTimeMillis())
-    private lateinit var takePhotoButton: ImageButton
+
+
     private var imageCapture: ImageCapture? = null
-    private lateinit var preview: Preview
+
     private lateinit var previewImage: ImageView
-    private lateinit var galleryButton: ImageButton
-    private lateinit var cameraSwitcher: AppCompatImageButton
+
     private var myLocation = MyLocation(0.0, 0.0)
 
-
     private val viewModel: MainViewModel by activityViewModels()
+    private val permissionsViewModel: PermissionsViewModel by activityViewModels()
+
+    private val permissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+            it.keys.forEach { permission ->
+                permissionsViewModel.onPermissionResult(
+                    permission, it[permission] == true
+                )
+                if(it[permission] == true){
+                    permissionsViewModel.dismissDialog(permission)
+                }
+            }
+        }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -85,39 +107,89 @@ class PhotoFragment : Fragment() {
 
         checkPermissions()
 
-
-
-        takePhotoButton = binding.takePhotoButton
+        val takePhotoButton = binding.takePhotoButton
+        val galleryButton = binding.gallery
         previewImage = binding.previewImage
-        galleryButton = binding.gallery
-        cameraSwitcher = binding.rotateCamera
+//        outputDirectory = getOutputDirectory()
 
+        //go to single photo by click on preview image
         previewImage.setOnClickListener {
             findNavController().navigate(R.id.action_photoFragment_to_singlePhotoFragment)
         }
 
+        //take a photo
         takePhotoButton.setOnClickListener {
-            takePhoto()
+            onTakePhotoClick()
         }
 
+        //go to route screen with all photos
         galleryButton.setOnClickListener {
-            viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            onGalleryButtonClick()
+        }
+
+        lifecycleScope.launch {
+            permissionsViewModel.permissionsList.collectLatest {
+                Log.d(TAG, "PERMISSIONS LIST: $it")
+                it
+                    .reversed()
+                    .forEach { permission ->
+                        providePermissionDialog(
+                            requireContext(),
+                            permissionDialogTextProvider = when (permission) {
+                                Manifest.permission.READ_EXTERNAL_STORAGE -> {
+                                    ReadExternalStoragePermission()
+                                }
+                                Manifest.permission.READ_MEDIA_AUDIO -> {
+                                    ReadMediaPermission()
+                                }
+                                Manifest.permission.WRITE_EXTERNAL_STORAGE -> {
+                                    WriteExternalStoragePermission()
+                                }
+                                Manifest.permission.CAMERA -> {
+                                    CameraPermission()
+                                }
+                                else -> {
+                                    return@forEach
+                                }
+                            },
+                            isPermanentlyDeclined = !shouldShowRequestPermissionRationale(permission),
+                            onOkClick = {
+                                permissionsViewModel.dismissDialog(permission)
+                                permissionLauncher.launch(arrayOf(permission))
+                            },
+                            onDismissClick = { permissionsViewModel.dismissDialog(permission) },
+                            onGoToAppSettingsCLick = { requireActivity().openAppSettings() }
+                        )
+                    }
+            }
+        }
+
+
+    }
+
+//    private fun getOutputDirectory(): File {
+//
+//    }
+
+    private fun onGalleryButtonClick() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.routeName.collectLatest { routeName ->
                     if (routeName != null) {
                         viewModel.getPhotosByRouteName(routeName)
                     }
                 }
             }
-
-            findNavController().navigate(R.id.action_photoFragment_to_routeFragment)
         }
-
-
+        findNavController().navigate(R.id.action_photoFragment_to_routeFragment)
     }
 
-    private fun takePhoto() {
-        Log.d(TAG, "Take photo")
+    private fun onTakePhotoClick() {
         val imageCapture = imageCapture ?: return
+
+//        val photoFile = File(
+//            outputDirectory,
+//        )
 
         val contentValues = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, currentDate)
@@ -130,8 +202,6 @@ class PhotoFragment : Fragment() {
             contentValues
         )
             .build()
-
-
 
         imageCapture.takePicture(
             outputOptions,
@@ -146,7 +216,6 @@ class PhotoFragment : Fragment() {
                         onImageSaved(output: ImageCapture.OutputFileResults) {
                     val uri = output.savedUri
                     val date = contentValues.get(MediaStore.MediaColumns.DISPLAY_NAME)
-
 
                     //Select this photo in ViewModel
                     viewModel.selectItem(
@@ -169,14 +238,10 @@ class PhotoFragment : Fragment() {
                         }
                     }
 
-
-                    val msg = "Photo capture succeeded: $uri"
-                    Log.d(TAG, msg)
-
-
                     //Display this photo in preview
-                    Glide.with(requireContext())
-                        .load(uri.toString())
+                    Glide.with(previewImage)
+                        .load(uri)
+                        .error(R.drawable.ic_baseline_error_outline_24)
                         .circleCrop()
                         .into(previewImage)
 
@@ -186,19 +251,19 @@ class PhotoFragment : Fragment() {
     }
 
     private fun startCamera() {
-        Log.d(TAG, "Start camera")
 
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+        viewLifecycleOwner.lifecycleScope.launch {
             viewModel.getCurrentLocation(INTERVAL_FOR_LOCATION_UPDATES).collectLatest { location ->
                 Log.d(TAG, "My location : ${location.latitude}, ${location.longitude}")
                 myLocation = MyLocation(location.latitude, location.longitude)
             }
         }
         val cameraProvider = ProcessCameraProvider.getInstance(this.requireContext())
+
         cameraProvider.addListener({
             val cameraProviderConfiguration = cameraProvider.get()
 
-            preview = Preview.Builder().build()
+            val preview = Preview.Builder().build()
                 .also {
                     it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
                 }
@@ -212,6 +277,7 @@ class PhotoFragment : Fragment() {
             cameraSelector = cameraBack
 
             //Front/back camera switcher
+            val cameraSwitcher = binding.rotateCamera
             cameraSwitcher.setOnClickListener {
                 if (cameraSelector == cameraBack) {
                     cameraSelector = cameraFront
@@ -234,8 +300,6 @@ class PhotoFragment : Fragment() {
                 }
             }
             imageCapture = ImageCapture.Builder()
-                .setFlashMode(ImageCapture.FLASH_MODE_AUTO)
-                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                 .build()
 
             cameraProviderConfiguration.unbindAll()
@@ -246,7 +310,6 @@ class PhotoFragment : Fragment() {
                     preview,
                     imageCapture
                 )
-
             } catch (exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
             }
@@ -254,37 +317,14 @@ class PhotoFragment : Fragment() {
     }
 
     private fun checkPermissions() {
-        val isAllGranted = REQUEST_PERMISSIONS.all { permission ->
-            (ContextCompat.checkSelfPermission(
-                requireContext(),
-                permission
-            ) == PackageManager.PERMISSION_GRANTED)
-        }
-        if (isAllGranted) {
+
+        if (requireContext().hasCameraPermission() && requireContext().hasReadPermission() && requireContext().hasWritePermission()) {
             startCamera()
         } else {
-            if (shouldShowRequestPermissionRationale(REQUEST_PERMISSIONS[0])) {
-                MaterialAlertDialogBuilder(requireContext())
-                    .setTitle("Camera permission dialog")
-                    .setMessage("This app works only with camera. To proceed please accept camera use")
-                    .setPositiveButton("OK", DialogInterface.OnClickListener { _, _ ->
-                        dialogLauncher()
-                    })
-                    .setNegativeButton("Cancel", DialogInterface.OnClickListener { dialog, _ ->
-                        findNavController().navigate(R.id.action_global_mapsFragment)
-                        dialog.dismiss()
-
-                    })
-                    .create()
-                    .show()
-            } else {
-                dialogLauncher()
-            }
+            permissionLauncher.launch(REQUIRED_READ_PERMISSIONS)
+            permissionLauncher.launch(REQUIRED_WRITE_PERMISSIONS)
+            permissionLauncher.launch(REQUIRED_CAMERA_PERMISSIONS)
         }
-    }
-
-    private fun dialogLauncher() {
-        launcher.launch(REQUEST_PERMISSIONS)
     }
 
     override fun onDestroyView() {

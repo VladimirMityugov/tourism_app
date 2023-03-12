@@ -2,14 +2,10 @@ package com.example.permissionsapp.presentation.view_models
 
 import android.graphics.Bitmap
 import android.location.Location
-import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.permissionsapp.data.local.entities.ObjectInfo
@@ -24,9 +20,6 @@ import com.example.permissionsapp.domain.UseCaseRemote
 import com.example.permissionsapp.domain.use_case_local.UseCaseObjectLocal
 import com.example.permissionsapp.domain.use_case_local.UseCasePlacesLocal
 import com.example.permissionsapp.domain.use_case_local.UseCaseRouteLocal
-import com.example.permissionsapp.presentation.utility.Constants.KEY_AVATAR_URL
-import com.example.permissionsapp.presentation.utility.Constants.KEY_FIRST_LAUNCH
-import com.example.permissionsapp.presentation.utility.Constants.KEY_NAME
 import com.example.permissionsapp.presentation.utility.DefaultLocationClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*

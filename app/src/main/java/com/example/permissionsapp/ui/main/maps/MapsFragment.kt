@@ -1,5 +1,6 @@
 package com.example.permissionsapp.ui.main.maps
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Intent
@@ -19,6 +20,7 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.appcompat.widget.AppCompatImageView
@@ -40,8 +42,12 @@ import com.example.permissionsapp.presentation.utility.Constants.CAMERA_ZOOM_VAL
 import com.example.permissionsapp.presentation.utility.Constants.INTERVAL_FOR_LOCATION_UPDATES
 import com.example.permissionsapp.presentation.utility.Constants.POLYLINE_COLOR
 import com.example.permissionsapp.presentation.utility.Constants.POLYLINE_WIDTH
+import com.example.permissionsapp.presentation.utility.Constants.REQUIRED_FOREGROUND_PERMISSIONS
+import com.example.permissionsapp.presentation.utility.Constants.REQUIRED_LOCATION_PERMISSIONS
+import com.example.permissionsapp.presentation.utility.Constants.REQUIRED_NOTIFICATION_PERMISSIONS
 import com.example.permissionsapp.presentation.utility.MyLocation
-import com.example.permissionsapp.presentation.utility.hasLocationPermission
+import com.example.permissionsapp.presentation.utility.permissions.*
+import com.example.permissionsapp.presentation.view_models.PermissionsViewModel
 import com.example.tourismApp.R
 import com.example.tourismApp.databinding.FragmentMapsBinding
 import com.google.android.gms.maps.*
@@ -50,6 +56,7 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import java.util.*
 
 
@@ -83,9 +90,20 @@ class MapsFragment : Fragment() {
 
     private var routePath = mutableListOf<Polyline>()
 
-    private var totalTime = 0L
-
     private val viewModel: MainViewModel by activityViewModels()
+    private val permissionsViewModel: PermissionsViewModel by activityViewModels()
+
+    private val permissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+            it.keys.forEach { permission ->
+                permissionsViewModel.onPermissionResult(
+                    permission, it[permission] == true
+                )
+                if (it[permission] == true) {
+                    permissionsViewModel.dismissDialog(permission)
+                }
+            }
+        }
 
     private val onMapReadyCallback = OnMapReadyCallback {
         map = it
@@ -275,6 +293,38 @@ class MapsFragment : Fragment() {
                         }
                     }
                 }
+            }
+        }
+
+
+        //Permissions handling
+        lifecycleScope.launch {
+            permissionsViewModel.permissionsList.collectLatest {
+                it
+                    .reversed()
+                    .forEach { permission ->
+                        providePermissionDialog(
+                            requireContext(),
+                            permissionDialogTextProvider = when (permission) {
+                                Manifest.permission.FOREGROUND_SERVICE -> {
+                                    ForegroundServicePermission()
+                                }
+                                Manifest.permission.POST_NOTIFICATIONS -> {
+                                    PostNotificationPermission()
+                                }
+                                else -> {
+                                    return@forEach
+                                }
+                            },
+                            isPermanentlyDeclined = !shouldShowRequestPermissionRationale(permission),
+                            onOkClick = {
+                                permissionsViewModel.dismissDialog(permission)
+                                permissionLauncher.launch(arrayOf(permission))
+                            },
+                            onDismissClick = { permissionsViewModel.dismissDialog(permission) },
+                            onGoToAppSettingsCLick = { requireActivity().openAppSettings() }
+                        )
+                    }
             }
         }
 
@@ -660,45 +710,51 @@ class MapsFragment : Fragment() {
 
     //buttonClicksHandlers
     private fun onSaveButtonClick(inputField: TextView, dialog: Dialog) {
-
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.getAllRoutes().collectLatest { routes ->
-                viewModel.routeName.collectLatest { name ->
-                    if (name == null) {
-                        val newRouteName = inputField.text
-                            .trim()
-                            .toString()
-                            .lowercase(Locale.ROOT)
-                            .replaceFirstChar {
-                                it.uppercaseChar()
-                            }
-                        val routeExists = routes.find { it.route_name == newRouteName }
-                        if (newRouteName.isNotEmpty()) {
-                            if (routeExists == null) {
-                                viewModel.selectRouteName(newRouteName)
-                                viewModel.insertRoute(
-                                    routeName = newRouteName
-                                )
-                                startRoute()
-                                dialog.dismiss()
+        if (requireContext().hasLocationPermission() && requireContext().hasNotificationPermission() && requireContext().hasForegroundServicePermission()) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewModel.getAllRoutes().collectLatest { routes ->
+                    viewModel.routeName.collectLatest { name ->
+                        if (name == null) {
+                            val newRouteName = inputField.text
+                                .trim()
+                                .toString()
+                                .lowercase(Locale.ROOT)
+                                .replaceFirstChar {
+                                    it.uppercaseChar()
+                                }
+                            val routeExists = routes.find { it.route_name == newRouteName }
+                            if (newRouteName.isNotEmpty()) {
+                                if (routeExists == null) {
+                                    viewModel.selectRouteName(newRouteName)
+                                    viewModel.insertRoute(
+                                        routeName = newRouteName
+                                    )
+                                    startRoute()
+                                    dialog.dismiss()
+                                } else {
+                                    Toast.makeText(
+                                        requireContext(),
+                                        "Route with this name already exists",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
                             } else {
                                 Toast.makeText(
                                     requireContext(),
-                                    "Route with this name already exists",
+                                    "Route name could not be empty",
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
-                        } else {
-                            Toast.makeText(
-                                requireContext(),
-                                "Route name could not be empty",
-                                Toast.LENGTH_SHORT
-                            ).show()
                         }
                     }
                 }
             }
+        }else{
+            permissionLauncher.launch(REQUIRED_LOCATION_PERMISSIONS)
+            permissionLauncher.launch(REQUIRED_FOREGROUND_PERMISSIONS)
+            permissionLauncher.launch(REQUIRED_NOTIFICATION_PERMISSIONS)
         }
+
     }
 
 

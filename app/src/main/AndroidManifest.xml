@@ -5,28 +5,28 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 
 
     <application
-        android:name="com.example.permissionsapp.presentation.App"
+       android:name=".presentation.App"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
-        android:usesCleartextTraffic="true"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.TourismApp"
+        android:usesCleartextTraffic="true"
         tools:targetApi="33">
 
         <meta-data
@@ -46,7 +46,7 @@
             android:resource="@color/black" />
 
         <activity
-            android:name="com.example.permissionsapp.ui.main.LoginActivity"
+            android:name="com.example.tourismapp.ui.main.LoginActivity"
             android:exported="true"
             android:theme="@style/MyTheme">
             <intent-filter>
@@ -61,7 +61,7 @@
         </activity>
 
         <activity
-            android:name="com.example.permissionsapp.ui.main.MainActivity"
+            android:name="com.example.tourismapp.ui.main.MainActivity"
             android:exported="false">
             <!--            <intent-filter>-->
             <!--                <action android:name="android.intent.action.MAIN" />-->
@@ -75,11 +75,11 @@
         </activity>
 
         <service
-            android:name="com.example.permissionsapp.presentation.services.LocationService"
+            android:name="com.example.tourismapp.presentation.services.LocationService"
             android:foregroundServiceType="location" />
 
         <service
-            android:name="com.example.permissionsapp.presentation.services.FcmService"
+            android:name="com.example.tourismapp.presentation.services.FcmService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />

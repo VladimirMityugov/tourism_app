@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white"
-    tools:context="com.example.permissionsapp.ui.main.maps.SearchSettingsFragment">
+    tools:context="com.example.tourismapp.ui.main.maps.SearchSettingsFragment">
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardView"

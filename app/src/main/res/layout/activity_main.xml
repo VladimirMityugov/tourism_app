@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/myBlack"
-    tools:context="com.example.permissionsapp.ui.main.MainActivity">
+    tools:context="com.example.tourismapp.ui.main.MainActivity">
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/nav_host_fragment"

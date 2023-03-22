@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/main"
-        android:name="com.example.permissionsapp.ui.main.main_screen.MainScreenFragment"
+        android:name="com.example.tourismapp.ui.main.main_screen.MainScreenFragment"
         android:label="MainScreenFragment"
         tools:layout="@layout/fragment_main_screen">
         <action
@@ -29,7 +29,7 @@
 
     <fragment
         android:id="@+id/profile"
-        android:name="com.example.permissionsapp.ui.main.profile.ProfileFragment"
+        android:name="com.example.tourismapp.ui.main.profile.ProfileFragment"
         android:label="ProfileFragment"
         tools:layout="@layout/fragment_profile" />
     <action
@@ -40,7 +40,7 @@
 
     <fragment
         android:id="@+id/maps"
-        android:name="com.example.permissionsapp.ui.main.maps.MapsFragment"
+        android:name="com.example.tourismapp.ui.main.maps.MapsFragment"
         android:label="MapsFragment"
         tools:layout="@layout/fragment_maps">
         <action
@@ -58,7 +58,7 @@
 
     <fragment
         android:id="@+id/photoFragment"
-        android:name="com.example.permissionsapp.ui.main.photos.PhotoFragment"
+        android:name="com.example.tourismapp.ui.main.photos.PhotoFragment"
         android:label="fragment_photo"
         tools:layout="@layout/fragment_photo">
         <action
@@ -76,12 +76,12 @@
 
     <fragment
         android:id="@+id/singlePhotoFragment"
-        android:name="com.example.permissionsapp.ui.main.photos.SinglePhotoFragment"
+        android:name="com.example.tourismapp.ui.main.photos.SinglePhotoFragment"
         android:label="fragment_single_photo"
         tools:layout="@layout/fragment_single_photo" />
     <fragment
         android:id="@+id/routeFragment"
-        android:name="com.example.permissionsapp.ui.main.photos.RouteFragment"
+        android:name="com.example.tourismapp.ui.main.photos.RouteFragment"
         android:label="fragment_list_photos"
         tools:layout="@layout/fragment_route">
         <action
@@ -97,7 +97,7 @@
     </fragment>
     <fragment
         android:id="@+id/collectionGalleryFragment"
-        android:name="com.example.permissionsapp.ui.main.photos.CollectionGalleryFragment"
+        android:name="com.example.tourismapp.ui.main.photos.CollectionGalleryFragment"
         android:label="fragment_gallery_collection"
         tools:layout="@layout/fragment_gallery_collection" />
 

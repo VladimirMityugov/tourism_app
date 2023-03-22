@@ -5,7 +5,7 @@
     android:id="@+id/gallery_single_layout"
     android:layout_width="wrap_content"
     android:layout_height="match_parent"
-    tools:context="com.example.permissionsapp.ui.main.photos.GallerySingleFragment">
+    tools:context="com.example.tourismapp.ui.main.photos.GallerySingleFragment">
 
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"

@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/myBlack"
-    tools:context="com.example.permissionsapp.ui.main.maps.MapsFragment">
+    tools:context="com.example.tourismapp.ui.main.maps.MapsFragment">
 
     <FrameLayout
         android:layout_width="42dp"
@@ -93,7 +93,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_constraintTop_toTopOf="parent"
-        tools:context="com.example.permissionsapp.ui.main.maps.MapsFragment"
+        tools:context="com.example.tourismapp.ui.main.maps.MapsFragment"
         tools:layout="@layout/fragment_main_screen"
         tools:layout_editor_absoluteX="0dp" />
 

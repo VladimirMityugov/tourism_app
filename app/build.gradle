@@ -10,11 +10,11 @@ plugins {
 }
 
 android {
-    namespace 'com.example.tourismApp'
+    namespace 'com.example.tourismapp'
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.example.tourismApp"
+        applicationId "com.example.tourismapp"
         minSdk 25
         targetSdk 33
         versionCode 1

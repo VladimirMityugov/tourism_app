@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/myBlack"
-    tools:context="com.example.permissionsapp.ui.main.main_screen.MainScreenFragment">
+    tools:context="com.example.tourismapp.ui.main.main_screen.MainScreenFragment">
 
     <FrameLayout
         android:id="@+id/header_layout"

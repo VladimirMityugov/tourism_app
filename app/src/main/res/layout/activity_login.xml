@@ -4,7 +4,7 @@
     android:id="@+id/login_activity_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.example.permissionsapp.ui.main.MainActivity">
+    tools:context="com.example.tourismapp.ui.main.MainActivity">
 
     <FrameLayout
         android:layout_width="match_parent"

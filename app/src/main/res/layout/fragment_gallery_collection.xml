@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     android:background="@color/myBlack"
     android:orientation="vertical"
-    tools:context="com.example.permissionsapp.ui.main.photos.CollectionGalleryFragment">
+    tools:context="com.example.tourismapp.ui.main.photos.CollectionGalleryFragment">
 
     <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/route_name"

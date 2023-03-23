@@ -13,14 +13,13 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="30dp"
-        android:layout_marginTop="30dp"
         android:background="@color/myBlack"
         android:src="@drawable/ic_back"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0" />
+        app:layout_constraintTop_toTopOf="@id/route_distance"
+       app:layout_constraintBottom_toBottomOf="@id/route_avg_speed"/>
 
     <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/route_name"
@@ -37,37 +36,47 @@
         android:id="@+id/route_distance"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="40dp"
-        app:layout_constraintHorizontal_bias="0.9"
+        android:layout_marginTop="5dp"
         android:textAppearance="@style/customTextStyle"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/route_name" />
 
     <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/route_duration"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="60dp"
+        android:layout_marginTop="5dp"
         android:text="@string/route_duration"
-        app:layout_constraintHorizontal_bias="0.9"
         android:textAppearance="@style/customTextStyle"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/route_distance" />
 
     <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/route_avg_speed"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="80dp"
+        android:layout_marginTop="5dp"
         android:text="@string/route_avg_speed"
-        app:layout_constraintHorizontal_bias="0.9"
         android:textAppearance="@style/customTextStyle"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/route_duration" />
 
+    <androidx.appcompat.widget.AppCompatImageView
+        android:layout_width="70dp"
+        android:layout_height="70dp"
+        android:id="@+id/route_mini_picture"
+        android:layout_margin="10dp"
+        android:scaleType="fitXY"
+        android:padding="4dp"
+        android:visibility="visible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/route_distance"
+        app:layout_constraintBottom_toBottomOf="@id/route_avg_speed"
+        tools:src = "@tools:sample/backgrounds/scenic"
+        android:background="@drawable/border"/>
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
@@ -97,6 +106,30 @@
                 tools:itemCount="50"
                 tools:listitem="@layout/photo_item" />
 
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="280dp"
+                android:layout_height="350dp"
+                android:id="@+id/route_picture"
+                android:layout_margin="10dp"
+                android:scaleType="fitXY"
+                android:padding="4dp"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintVertical_bias="0"
+                tools:src = "@tools:sample/backgrounds/scenic"
+                android:background="@drawable/border"/>
+
+            <androidx.constraintlayout.widget.Barrier
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:barrierDirection="bottom"
+                android:id="@+id/barrier"
+                app:constraint_referenced_ids="photosRecyclerView,route_picture"/>
+
             <LinearLayout
                 android:id="@+id/linear_layout"
                 android:layout_width="match_parent"
@@ -107,7 +140,7 @@
                 android:orientation="horizontal"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/photosRecyclerView">
+                app:layout_constraintTop_toBottomOf="@id/barrier">
 
                 <androidx.appcompat.widget.AppCompatImageButton
                     android:id="@+id/add_description_button"

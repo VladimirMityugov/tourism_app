@@ -2,14 +2,12 @@ package com.example.tourismapp.presentation.utility
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.util.Log
 import androidx.room.TypeConverter
 import com.example.tourismapp.presentation.services.Polyline
 import com.example.tourismapp.presentation.services.Polylines
 import com.google.android.gms.maps.model.LatLng
 import java.io.ByteArrayOutputStream
 
-private const val TAG = "CONVERTERS"
 
 class Converters {
 
@@ -29,26 +27,22 @@ class Converters {
     fun toPolylines(value: String): Polylines {
         val result = mutableListOf<Polyline>()
         if (value.isNotBlank()) {
-            val polyline = value.split("||")
-            val intermediateResult = mutableListOf<LatLng>()
-            polyline.dropLast(1)
-            polyline.forEach { polyline ->
-                val coordinates = polyline.split("|")
-                Log.d(TAG, "CONVERTED COORDINATES: $coordinates")
-                if(coordinates.isNotEmpty()){
-                    for (i in coordinates.indices step 2) {
-                        Log.d(TAG, "INDEX: $i")
-                        val lat = coordinates[i].toDouble()
-                        val lng = coordinates[i + 1].toDouble()
-                        intermediateResult.add(LatLng(lat, lng))
-                        Log.d(TAG, "INTERMEDIATE RESULT: $intermediateResult")
+            val polylines = value.split("||")
+            polylines.forEach { polyline ->
+                if (polyline.isNotBlank()) {
+                    val intermediateResult = mutableListOf<LatLng>()
+                    val coordinates = polyline.split("|")
+                    if (coordinates.isNotEmpty()) {
+                        for (i in coordinates.indices step 2) {
+                            val lat = coordinates[i].toDouble()
+                            val lng = coordinates[i + 1].toDouble()
+                            intermediateResult.add(LatLng(lat, lng))
+                        }
                     }
+                    result.add(intermediateResult)
                 }
-                result.add(intermediateResult)
             }
-            Log.d(TAG, "INTERMEDIATE RESULT: $intermediateResult")
         }
-        Log.d(TAG, "RESULT is : $result")
         return result
     }
 

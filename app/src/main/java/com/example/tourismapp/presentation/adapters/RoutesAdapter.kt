@@ -67,7 +67,6 @@ class RoutesViewHolder(
                 .with(routePicture.context)
                 .load(item.bmp)
                 .error(R.drawable.ic_baseline_error_outline_24)
-                .placeholder(R.drawable.ic_baseline_image_24)
                 .into(routePicture)
 
             trashIcon.setOnClickListener {

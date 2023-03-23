@@ -94,11 +94,21 @@
             app:destination="@id/singlePhotoFragment"
             app:enterAnim="@anim/fui_slide_in_right"
             app:exitAnim="@anim/fui_slide_out_left"/>
+        <action
+            android:id="@+id/action_routeFragment_to_savedRouteMapFragment"
+            app:destination="@id/savedRouteMapFragment"
+            app:enterAnim="@anim/fui_slide_in_right"
+            app:exitAnim="@anim/fui_slide_out_left"/>
     </fragment>
     <fragment
         android:id="@+id/collectionGalleryFragment"
         android:name="com.example.tourismapp.ui.main.photos.CollectionGalleryFragment"
         android:label="fragment_gallery_collection"
         tools:layout="@layout/fragment_gallery_collection" />
+    <fragment
+        android:id="@+id/savedRouteMapFragment"
+        android:name="com.example.tourismapp.ui.main.photos.SavedRouteMapFragment"
+        android:label="fragment_saved_route_map"
+        tools:layout="@layout/fragment_saved_route_map" />
 
 </navigation>

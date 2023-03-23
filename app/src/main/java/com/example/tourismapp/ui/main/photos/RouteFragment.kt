@@ -10,23 +10,25 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
-import androidx.appcompat.widget.AppCompatImageButton
-import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.tourismapp.R
-import com.example.tourismapp.data.local.entities.PhotoData
 import com.example.tourismapp.databinding.FragmentRouteBinding
 import com.example.tourismapp.domain.models.local.PhotoDataModel
 import com.example.tourismapp.presentation.view_models.MainViewModel
 import com.example.tourismapp.presentation.adapters.PhotoAdapter
+import com.example.tourismapp.presentation.utility.permissions.hasReadPermission
+import com.example.tourismapp.presentation.utility.permissions.hasWritePermission
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.math.round
 
@@ -56,16 +58,6 @@ class RouteFragment : Fragment() {
     private var _binding: FragmentRouteBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var routeName: AppCompatTextView
-    private lateinit var routeDistance: AppCompatTextView
-    private lateinit var routeDuration: AppCompatTextView
-    private lateinit var routeAvgSpeed: AppCompatTextView
-    private lateinit var photosRecyclerView: RecyclerView
-    private lateinit var backButton: AppCompatImageButton
-    private lateinit var description: AppCompatTextView
-    private lateinit var addDescriptionButton: AppCompatImageButton
-    private lateinit var addDescriptionTitle: AppCompatTextView
-
     private val viewModel: MainViewModel by activityViewModels()
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -74,7 +66,6 @@ class RouteFragment : Fragment() {
         onLongClick = { PhotoData -> onLongItemClick(PhotoData) },
         onDeletePhotoClick = { PhotoData -> onDeleteItemClick(PhotoData) }
     )
-
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -88,76 +79,110 @@ class RouteFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        checkPermissions()
+        if (!requireContext().hasReadPermission() && !requireContext().hasWritePermission()) {
+            checkPermissions()
+        }
 
-        backButton = binding.backButton
-        description = binding.description
-        routeName = binding.routeName
-        routeDistance = binding.routeDistance
-        routeDuration = binding.routeDuration
-        routeAvgSpeed = binding.routeAvgSpeed
-        addDescriptionButton = binding.addDescriptionButton
-        addDescriptionTitle = binding.addDescriptionTitle
-        photosRecyclerView = binding.photosRecyclerView
+        val description = binding.description
+        val routeName = binding.routeName
+        val routeDistance = binding.routeDistance
+        val routeDuration = binding.routeDuration
+        val routeAvgSpeed = binding.routeAvgSpeed
+        val routePicture = binding.routePicture
+        val routeMiniPicture = binding.routeMiniPicture
 
+        val photosRecyclerView = binding.photosRecyclerView
         photosRecyclerView.adapter = photoAdapter
 
-        addDescriptionButton.setOnClickListener {
+        routePicture.setOnClickListener {
+            onRoutePictureClick()
+        }
+
+        routeMiniPicture.setOnClickListener {
+            onRoutePictureClick()
+        }
+
+        binding.addDescriptionButton.setOnClickListener {
             onAddDescriptionClick()
         }
 
-        addDescriptionTitle.setOnClickListener {
+        binding.addDescriptionTitle.setOnClickListener {
             onAddDescriptionClick()
         }
 
-        backButton.setOnClickListener {
+        binding.backButton.setOnClickListener {
             requireActivity().onBackPressedDispatcher.onBackPressed()
         }
 
         description.setTextColor(resources.getColor(R.color.myOrange, resources.newTheme()))
 
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.routeName.collectLatest { name ->
-                if (name != null) {
-                    routeName.text = name
-                    viewModel.getRouteInfoByName(name).collectLatest { routeInfo ->
-                        if (routeInfo.route_is_finished) {
-                            routeAvgSpeed.visibility = View.VISIBLE
-                            routeDuration.visibility = View.VISIBLE
-                            routeDistance.visibility - View.VISIBLE
-                            routeAvgSpeed.text = buildString {
-                                append("Average speed (km/h): ")
-                                append(routeInfo.route_average_speed)
-                            }
-                            routeDuration.text = buildString {
-                                append("Route duration (minutes): ")
-                                append(round((routeInfo.route_time!! / 1000F / 60)*100) / 100)
-                            }
-                            routeDistance.text = buildString {
-                                append("Route distance (meters): ")
-                                append(routeInfo.route_distance!!.toInt())
-                            }
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.getPhotosByRouteName(viewModel.routeName.value.toString())
+                    .collectLatest { photos ->
+                        if (photos.isNotEmpty()) {
+                            photosRecyclerView.visibility = View.VISIBLE
+                            routeMiniPicture.visibility = View.VISIBLE
+                            routePicture.visibility = View.GONE
+                            photoAdapter.submitList(photos)
                         } else {
-                            routeAvgSpeed.visibility = View.INVISIBLE
-                            routeDuration.visibility = View.INVISIBLE
-                            routeDistance.visibility - View.INVISIBLE
-                        }
-
-                        val routeDescription =
-                            routeInfo.route_description
-                        if (routeDescription != null) {
-                            description.visibility = View.VISIBLE
-                            description.text = routeDescription
-                        } else {
-                            description.visibility = View.INVISIBLE
+                            photosRecyclerView.visibility = View.GONE
+                            routePicture.visibility = View.VISIBLE
+                            routeMiniPicture.visibility = View.GONE
                         }
                     }
-
-                }
-
             }
         }
 
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.routeName.collectLatest { name ->
+                    if (name != null) {
+                        routeName.text = name
+                        viewModel.getRouteInfoByName(name).collectLatest { routeInfo ->
+                            if (routeInfo.route_is_finished) {
+                                routeAvgSpeed.visibility = View.VISIBLE
+                                routeDuration.visibility = View.VISIBLE
+                                routeDistance.visibility - View.VISIBLE
+                                routeAvgSpeed.text = buildString {
+                                    append("Average speed (km/h): ")
+                                    append(routeInfo.route_average_speed)
+                                }
+                                routeDuration.text = buildString {
+                                    append("Route duration (minutes): ")
+                                    append(round((routeInfo.route_time!! / 1000F / 60) * 100) / 100)
+                                }
+                                routeDistance.text = buildString {
+                                    append("Route distance (meters): ")
+                                    append(routeInfo.route_distance!!.toInt())
+                                }
+                                Glide
+                                    .with(routePicture)
+                                    .load(routeInfo.bmp)
+                                    .into(routePicture)
+                                Glide
+                                    .with(routeMiniPicture)
+                                    .load(routeInfo.bmp)
+                                    .into(routeMiniPicture)
+                            } else {
+                                routeAvgSpeed.visibility = View.INVISIBLE
+                                routeDuration.visibility = View.INVISIBLE
+                                routeDistance.visibility - View.INVISIBLE
+                            }
+
+                            val routeDescription =
+                                routeInfo.route_description
+                            if (routeDescription != null) {
+                                description.visibility = View.VISIBLE
+                                description.text = routeDescription
+                            } else {
+                                description.visibility = View.INVISIBLE
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun onItemClick(item: PhotoDataModel) {
@@ -169,6 +194,10 @@ class RouteFragment : Fragment() {
         viewModel.deletePhoto(photoData.pic_src)
     }
 
+    private fun onRoutePictureClick() {
+        findNavController().navigate(R.id.action_routeFragment_to_savedRouteMapFragment)
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
     private fun checkPermissions() {
         val allGranted = REQUEST_PERMISSIONS.all { permission ->
@@ -178,12 +207,7 @@ class RouteFragment : Fragment() {
             ) == PackageManager.PERMISSION_GRANTED
         }
         if (allGranted) {
-            viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-                viewModel.getPhotosByRouteName(viewModel.routeName.value.toString())
-                    .collectLatest { photos ->
-                        photoAdapter.submitList(photos)
-                    }
-            }
+            Log.d(TAG, "ALL PERMISSIONS GRANTED")
         } else launcher.launch(REQUEST_PERMISSIONS)
     }
 

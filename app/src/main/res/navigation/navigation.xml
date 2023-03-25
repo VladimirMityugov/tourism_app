@@ -107,8 +107,14 @@
         tools:layout="@layout/fragment_gallery_collection" />
     <fragment
         android:id="@+id/savedRouteMapFragment"
-        android:name="com.example.tourismapp.ui.main.photos.SavedRouteMapFragment"
+        android:name="com.example.tourismapp.ui.main.maps.SavedRouteMapFragment"
         android:label="fragment_saved_route_map"
-        tools:layout="@layout/fragment_saved_route_map" />
+        tools:layout="@layout/fragment_saved_route_map" >
+        <action
+            android:id="@+id/action_savedRouteMapFragment_to_singlePhotoFragment"
+            app:destination="@id/singlePhotoFragment"
+            app:enterAnim="@anim/fui_slide_in_right"
+            app:exitAnim="@anim/fui_slide_out_left"/>
+    </fragment>
 
 </navigation>

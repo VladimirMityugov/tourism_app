@@ -3,11 +3,11 @@ package com.example.tourismapp.ui.main.maps
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Dialog
-import android.content.Context
 import android.content.Intent
-import android.content.res.Resources
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
 import android.location.Location
 import android.net.Uri
 import android.os.Build
@@ -24,6 +24,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.appcompat.widget.AppCompatImageView
+import androidx.core.view.setPadding
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentContainerView
@@ -33,6 +34,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
 import com.example.tourismapp.databinding.FragmentMapsBinding
 import com.example.tourismapp.presentation.view_models.MainViewModel
 import com.example.tourismapp.presentation.utility.Constants.ACTION_START
@@ -55,7 +58,6 @@ import com.google.android.gms.maps.*
 import com.google.android.gms.maps.model.*
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.*
@@ -105,7 +107,21 @@ class MapsFragment : Fragment() {
         map = it
         Auxiliary.setMapStyle(map = map!!, context = requireContext())
         Auxiliary.setMapSettings(map = map!!)
-        Auxiliary.addAllPolylines(routePath = LocationService.routePath.value, map = map!!)
+        map!!.clear()
+        addAllPolylines()
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.getPhotosByRouteName(viewModel.routeName.value.toString())
+                    .collectLatest { photos ->
+                        if (photos.isNotEmpty()) {
+                            photos.forEach { photo ->
+                                val latLng = LatLng(photo.latitude, photo.longitude)
+                                attachPhotoToRoute(photo.pic_src, latLng)
+                            }
+                        }
+                    }
+            }
+        }
 
         map!!.setOnMarkerClickListener { marker ->
             val xid = markers[marker.id]
@@ -244,51 +260,52 @@ class MapsFragment : Fragment() {
 
         //mapActivities
         viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED){
-                viewModel.getCurrentLocation(INTERVAL_FOR_LOCATION_UPDATES).collectLatest { location ->
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.getCurrentLocation(INTERVAL_FOR_LOCATION_UPDATES)
+                    .collectLatest { location ->
 
-                    //drawRoutePath
-                    drawLatestPolyline()
-                    myLocation = MyLocation(location.latitude, location.longitude)
+                        //drawRoutePath
+                        drawLatestPolyline()
+                        myLocation = MyLocation(location.latitude, location.longitude)
 
-                    //setPlacesMarkersOnMapIfRequired
-                    viewModel.getPlacesKinds().collectLatest { placeKindList ->
-                        val placesKinds = mutableListOf<String>()
-                        placeKindList.forEach {
-                            placesKinds.add(it.kind)
-                        }
-                        viewModel.updatePlacesKindsList(placesKinds)
-                        viewModel.hideAllPlaces.collectLatest { hideAll ->
-                            if (!hideAll) {
-                                viewModel.getPlacesAround(
-                                    location.longitude,
-                                    location.latitude,
-                                    placesKinds,
-                                    null
-                                )
-//                            showPlaces(location)
-                            } else {
-                                hideAllPlaces(location)
+                        //setPlacesMarkersOnMapIfRequired
+                        viewModel.getPlacesKinds().collectLatest { placeKindList ->
+                            val placesKinds = mutableListOf<String>()
+                            placeKindList.forEach {
+                                placesKinds.add(it.kind)
                             }
-                            binding.hideShowButton.setOnClickListener {
-                                if (hideAll) {
-                                    viewModel.hideAllPlaces(false)
+                            viewModel.updatePlacesKindsList(placesKinds)
+                            viewModel.hideAllPlaces.collectLatest { hideAll ->
+                                if (!hideAll) {
                                     viewModel.getPlacesAround(
                                         location.longitude,
                                         location.latitude,
                                         placesKinds,
                                         null
                                     )
-//                                showPlaces(location)
-                                    viewModel.onPlacesKindsClick(INTERESTING_PLACES)
+//                            showPlaces(location)
                                 } else {
-                                    viewModel.hideAllPlaces(true)
                                     hideAllPlaces(location)
+                                }
+                                binding.hideShowButton.setOnClickListener {
+                                    if (hideAll) {
+                                        viewModel.hideAllPlaces(false)
+                                        viewModel.getPlacesAround(
+                                            location.longitude,
+                                            location.latitude,
+                                            placesKinds,
+                                            null
+                                        )
+//                                showPlaces(location)
+                                        viewModel.onPlacesKindsClick(INTERESTING_PLACES)
+                                    } else {
+                                        viewModel.hideAllPlaces(true)
+                                        hideAllPlaces(location)
+                                    }
                                 }
                             }
                         }
                     }
-                }
             }
         }
 
@@ -329,18 +346,18 @@ class MapsFragment : Fragment() {
         }
 
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.getPhotosByRouteName(viewModel.routeName.value.toString())
-                    .collectLatest { photos ->
-                        if (photos.isNotEmpty()) {
-                            photos.forEach {
-                                addPhotoToRoute(it.latitude, it.longitude, it.pic_src)
-                            }
-                        }
-                    }
-            }
-        }
+//        viewLifecycleOwner.lifecycleScope.launch {
+//            repeatOnLifecycle(Lifecycle.State.STARTED) {
+//                viewModel.getPhotosByRouteName(viewModel.routeName.value.toString())
+//                    .collectLatest { photos ->
+//                        if (photos.isNotEmpty()) {
+//                            photos.forEach {
+//                                addPhotoToRoute(it.latitude, it.longitude, it.pic_src)
+//                            }
+//                        }
+//                    }
+//            }
+//        }
     }
 
 
@@ -520,36 +537,26 @@ class MapsFragment : Fragment() {
         }
     }
 
-    private fun addPhotoToRoute(latitude: Double, longitude: Double, picSrc: String) {
-        val latLng = LatLng(latitude, longitude)
-        val markerLayout = layoutInflater.inflate(R.layout.photo_marker, null)
-        markerLayout.measure(
-            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
-            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-        )
-        markerLayout.layout(0, 0, markerLayout.measuredWidth, markerLayout.measuredHeight)
-        val markerImage = markerLayout.findViewById<ImageView>(R.id.marker_image)
-
-        Log.d(TAG, "LAYOUT: $markerLayout")
-        Log.d(TAG, "IMAGE: $markerImage")
-
-        Glide
-            .with(this)
+    private fun attachPhotoToRoute(picSrc: String, latLng: LatLng) {
+        val markerOptions = MarkerOptions()
+            .position(latLng)
+        Glide.with(this)
+            .asBitmap()
+            .override(250, 250)
             .load(Uri.parse(picSrc))
-            .error(R.drawable.ic_baseline_error_outline_24)
-            .into(markerImage)
-
-        val markerIcon = Auxiliary.getMarkerBitmapFromView(markerLayout)
-        Log.d(TAG, "Icon $markerIcon")
-
-        map?.addMarker(
-            MarkerOptions()
-                .position(latLng)
-                .icon(
-                    markerIcon?.let { BitmapDescriptorFactory.fromBitmap(it) }
-                )
-        )
-
+            .circleCrop()
+            .into(object : CustomTarget<Bitmap>() {
+                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                    val view = ImageView(requireContext())
+                    view.setImageBitmap(resource)
+                    view.setPadding(2)
+                    view.setBackgroundResource(R.drawable.circle_border)
+                    val iconBitmap = Auxiliary.getMarkerBitmapFromView(view)
+                    markerOptions.icon(BitmapDescriptorFactory.fromBitmap(iconBitmap!!))
+                    map!!.addMarker(markerOptions)
+                }
+                override fun onLoadCleared(placeholder: Drawable?) {}
+            })
     }
 
     private fun getInfoWindowAdapter(): GoogleMap.InfoWindowAdapter {
@@ -612,6 +619,35 @@ class MapsFragment : Fragment() {
         moveCameraToUser()
     }
 
+    private fun addAllPolylines() {
+        routePath = LocationService.routePath.value
+        for (polyline in routePath) {
+            val polylineOptions = PolylineOptions()
+                .color(POLYLINE_COLOR)
+                .width(POLYLINE_WIDTH)
+                .addAll(polyline)
+            map!!.addPolyline(polylineOptions)
+        }
+    }
+
+    private fun zoomToSeeWholeTrack() {
+        routePath = LocationService.routePath.value
+        val bounds = LatLngBounds.builder()
+        for (polyline in routePath) {
+            for (coordinates in polyline) {
+                bounds.include(coordinates)
+            }
+        }
+        map!!.moveCamera(
+            CameraUpdateFactory.newLatLngBounds(
+                bounds.build(),
+                mapView.width,
+                mapView.height,
+                (mapView.height * 0.05F).toInt()
+            )
+        )
+    }
+
     private fun saveRouteData() {
         stopRoute()
         val routePath = LocationService.routePath.value
@@ -653,7 +689,7 @@ class MapsFragment : Fragment() {
     private fun onSaveButtonClick(inputField: TextView, dialog: Dialog) {
         if (requireContext().hasLocationPermission() && requireContext().hasNotificationPermission() && requireContext().hasForegroundServicePermission()) {
             viewLifecycleOwner.lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.STARTED){
+                repeatOnLifecycle(Lifecycle.State.STARTED) {
                     val routes = viewModel.getAllRoutes().first()
                     val name = viewModel.routeName.value
                     if (name == null) {
@@ -702,11 +738,19 @@ class MapsFragment : Fragment() {
 
     private fun onStopButtonClick() {
         if (LocationService.isOnRoute.value) {
-            Auxiliary.zoomToSeeWholeTrack(routePath = LocationService.routePath.value, map = map!!, mapView = mapView)
-            viewLifecycleOwner.lifecycleScope.launch {
-                delay(1000L)
+//            Auxiliary.zoomToSeeWholeTrack(
+//                routePath = LocationService.routePath.value,
+//                map = map!!,
+//                mapView = mapView
+//            )
+            zoomToSeeWholeTrack()
+            onMapReadyCallback.onMapReady(map!!).also {
+                saveRouteData()
             }
-            saveRouteData()
+//            viewLifecycleOwner.lifecycleScope.launch {
+//                delay(1000L)
+//            }
+
         }
     }
 

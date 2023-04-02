@@ -23,8 +23,8 @@ import com.example.tourismapp.presentation.utility.Constants.ACTION_STOP
 import com.example.tourismapp.presentation.utility.Constants.INTERVAL_FOR_LOCATION_UPDATES
 import com.example.tourismapp.presentation.utility.Constants.LOCATION_NOTIFICATION_ID
 import com.example.tourismapp.presentation.utility.Constants.LOCATION_SERVICE_CHANNEL_ID
-import com.example.tourismapp.presentation.utility.DefaultLocationClient
-import com.example.tourismapp.presentation.utility.LocationClient
+import com.example.tourismapp.presentation.utility.location.DefaultLocationClient
+import com.example.tourismapp.presentation.utility.location.LocationClient
 import com.example.tourismapp.ui.main.MainActivity
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng

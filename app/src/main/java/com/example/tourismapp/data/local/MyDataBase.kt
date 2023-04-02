@@ -11,7 +11,6 @@ import com.example.tourismapp.data.local.entities.ObjectInfo
 import com.example.tourismapp.data.local.entities.PhotoData
 import com.example.tourismapp.data.local.entities.PlacesForSearch
 import com.example.tourismapp.data.local.entities.RouteData
-import com.example.tourismapp.presentation.utility.Converters
 
 
 @Database(

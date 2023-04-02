@@ -5,14 +5,21 @@ import android.content.Context
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.drawable.Drawable
 import android.location.Location
+import android.net.Uri
 import android.util.Log
 import android.view.View
+import android.widget.ImageView
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory
+import androidx.core.graphics.drawable.toBitmap
+import androidx.core.view.setPadding
 import androidx.fragment.app.FragmentContainerView
 import com.example.tourismapp.R
 import com.example.tourismapp.presentation.services.Polyline
 import com.example.tourismapp.presentation.services.Polylines
+import com.example.tourismapp.presentation.utility.clustering.PhotoMarker
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.*
@@ -52,9 +59,7 @@ object Auxiliary {
     }
 
     fun calculateAverageSpeed(time: Long, distance: Float): Float {
-        val result = round((distance / 1000F) / (time / 1000F / 60 / 60) * 10) / 10F
-        Log.d(TAG, "RESULT IS : $result")
-        return result
+        return round((distance / 1000F) / (time / 1000F / 60 / 60) * 10) / 10F
     }
 
     fun bitmapDescriptorFromVector(
@@ -84,6 +89,26 @@ object Auxiliary {
         return bitmap
     }
 
+    fun getDrawableFromUri(uri: Uri, context: Context): Drawable? {
+        val inputStream = context.contentResolver.openInputStream(uri)
+        return inputStream?.let { stream ->
+            Drawable.createFromStream(stream, uri.toString())
+        }
+    }
+
+    fun getRoundedImageView(context: Context, photoMarker: PhotoMarker): ImageView {
+        val imageView = ImageView(context)
+        val uri = Uri.parse(photoMarker.pic_src)
+        val drawable = getDrawableFromUri(uri, context)
+        val bmp = drawable?.toBitmap(200, 200, null)
+        val roundedBitmapDrawable = RoundedBitmapDrawableFactory.create(context.resources, bmp)
+        roundedBitmapDrawable.cornerRadius = bmp?.width?.toFloat()!!
+        imageView.setImageDrawable(roundedBitmapDrawable)
+        imageView.setBackgroundResource(R.drawable.circle_border)
+        imageView.setPadding(2)
+        return imageView
+    }
+
     fun addAllPolylines(routePath: Polylines, map: GoogleMap) {
         for (polyline in routePath) {
             val polylineOptions = PolylineOptions()
@@ -110,7 +135,7 @@ object Auxiliary {
     }
 
     @SuppressLint("MissingPermission")
-   fun setMapSettings(map: GoogleMap) {
+    fun setMapSettings(map: GoogleMap) {
         map.isMyLocationEnabled = true
         map.mapType = GoogleMap.MAP_TYPE_NORMAL
         with(map.uiSettings) {
@@ -123,7 +148,11 @@ object Auxiliary {
         }
     }
 
-    fun zoomToSeeWholeTrack(routePath: List<Polyline>, map: GoogleMap, mapView: FragmentContainerView) {
+    fun zoomToSeeWholeTrack(
+        routePath: List<Polyline>,
+        map: GoogleMap,
+        mapView: FragmentContainerView
+    ) {
         val bounds = LatLngBounds.builder()
         for (polyline in routePath) {
             for (coordinates in polyline) {
@@ -139,7 +168,6 @@ object Auxiliary {
             )
         )
     }
-
 
 
 }

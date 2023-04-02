@@ -21,7 +21,7 @@ import com.example.tourismapp.domain.use_cases.use_case_local.UseCaseObjectLocal
 import com.example.tourismapp.domain.use_cases.use_case_local.UseCasePlacesLocal
 import com.example.tourismapp.domain.use_cases.use_case_local.UseCaseRouteLocal
 import com.example.tourismapp.presentation.services.Polylines
-import com.example.tourismapp.presentation.utility.DefaultLocationClient
+import com.example.tourismapp.presentation.utility.location.DefaultLocationClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch

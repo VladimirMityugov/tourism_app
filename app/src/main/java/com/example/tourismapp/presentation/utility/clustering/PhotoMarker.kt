@@ -1,4 +1,4 @@
-package com.example.tourismapp.presentation.utility
+package com.example.tourismapp.presentation.utility.clustering
 
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.clustering.ClusterItem
@@ -29,6 +29,10 @@ data class PhotoMarker(
             }
         }
         return snippet
+    }
+
+    override fun getZIndex(): Float? {
+      return null
     }
 
 }

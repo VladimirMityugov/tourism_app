@@ -1,4 +1,4 @@
-package com.example.tourismapp.presentation.utility
+package com.example.tourismapp.presentation.utility.location
 
 import android.location.Location
 import kotlinx.coroutines.flow.Flow

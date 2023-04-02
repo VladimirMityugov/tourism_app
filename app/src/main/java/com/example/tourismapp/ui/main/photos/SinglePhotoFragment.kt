@@ -6,18 +6,17 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
-import android.widget.ImageView
-import androidx.appcompat.widget.AppCompatImageButton
-import androidx.appcompat.widget.AppCompatTextView
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.bumptech.glide.Glide
 import com.example.tourismapp.R
 import com.example.tourismapp.databinding.FragmentSinglePhotoBinding
 import com.example.tourismapp.presentation.view_models.MainViewModel
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 private const val TAG = "SINGLE_PHOTO"
 
@@ -30,14 +29,7 @@ class SinglePhotoFragment : Fragment() {
     private var _binding: FragmentSinglePhotoBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var photo: ImageView
-    private lateinit var backButton: ImageButton
-    private lateinit var addDescriptionButton: AppCompatImageButton
-    private lateinit var addDescriptionTitle: AppCompatTextView
-    private lateinit var description: AppCompatTextView
-
     private val viewModel: MainViewModel by activityViewModels()
-
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -50,44 +42,44 @@ class SinglePhotoFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        photo = binding.photoImage
-        backButton = binding.backButton
-        addDescriptionButton = binding.addDescriptionButton
-        addDescriptionTitle = binding.addDescriptionTitle
-        description = binding.description
+        val photo = binding.photoImage
+        val description = binding.description
 
-
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.selectedItem.collectLatest { uri ->
-                Glide
-                    .with(photo.context)
-                    .load(uri)
-                    .centerCrop()
-                    .into(photo)
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.selectedItem.collectLatest { uri ->
+                    Glide
+                        .with(photo.context)
+                        .load(uri)
+                        .centerCrop()
+                        .into(photo)
+                }
             }
         }
 
-        addDescriptionButton.setOnClickListener {
+        binding.addDescriptionButton.setOnClickListener {
             onAddDescriptionClick()
         }
 
-        addDescriptionTitle.setOnClickListener {
+        binding.addDescriptionTitle.setOnClickListener {
             onAddDescriptionClick()
         }
 
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.getPhotosByRouteName(viewModel.routeName.value.toString())
-                .collectLatest { photos ->
-                    viewModel.selectedItem.collectLatest { uri ->
-                        val photoDescription = photos.find { it.pic_src == uri }?.description
-                        if (photoDescription != null) {
-                            description.visibility = View.VISIBLE
-                            description.text = photoDescription
-                        } else {
-                            description.visibility = View.GONE
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.getPhotosByRouteName(viewModel.routeName.value.toString())
+                    .collectLatest { photos ->
+                        viewModel.selectedItem.collectLatest { uri ->
+                            val photoDescription = photos.find { it.pic_src == uri }?.description
+                            if (photoDescription != null) {
+                                description.visibility = View.VISIBLE
+                                description.text = photoDescription
+                            } else {
+                                description.visibility = View.GONE
+                            }
                         }
                     }
-                }
+            }
         }
 
 
@@ -95,7 +87,7 @@ class SinglePhotoFragment : Fragment() {
             requireActivity().onBackPressedDispatcher.onBackPressed()
         }
 
-        backButton.setOnClickListener {
+        binding.backButton.setOnClickListener {
             requireActivity().onBackPressedDispatcher.onBackPressed()
         }
     }

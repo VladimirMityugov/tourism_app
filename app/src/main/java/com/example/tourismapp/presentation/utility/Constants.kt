@@ -23,7 +23,6 @@ object Constants {
     const val AVATAR =
         "https://w0.peakpx.com/wallpaper/458/418/HD-wallpaper-captain-jack-sparrow-fantasy-luminos-man-face-mark-armstrong-rand-johnny-depp.jpg"
     const val DATA_STORE_NAME = "DATA_STORE"
-
     val REQUIRED_READ_PERMISSIONS: Array<String> = buildList {
         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.TIRAMISU) {
             add(Manifest.permission.READ_MEDIA_AUDIO)
@@ -58,7 +57,7 @@ object Constants {
             Manifest.permission.FOREGROUND_SERVICE
         )
     } else {
-       emptyArray()
+        emptyArray()
     }
 
     val REQUIRED_NOTIFICATION_PERMISSIONS: Array<String> = buildList {

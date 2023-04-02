@@ -32,7 +32,7 @@ import com.example.tourismapp.presentation.utility.Constants.INTERVAL_FOR_LOCATI
 import com.example.tourismapp.presentation.utility.Constants.REQUIRED_CAMERA_PERMISSIONS
 import com.example.tourismapp.presentation.utility.Constants.REQUIRED_READ_PERMISSIONS
 import com.example.tourismapp.presentation.utility.Constants.REQUIRED_WRITE_PERMISSIONS
-import com.example.tourismapp.presentation.utility.MyLocation
+import com.example.tourismapp.presentation.utility.location.MyLocation
 import com.example.tourismapp.presentation.utility.permissions.*
 import com.example.tourismapp.presentation.view_models.PermissionsViewModel
 import dagger.hilt.android.AndroidEntryPoint

@@ -1,38 +1,30 @@
 package com.example.tourismapp.ui.main.maps
 
-import android.graphics.Bitmap
-import android.graphics.drawable.Drawable
-import android.net.Uri
-import androidx.fragment.app.Fragment
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.Toast
-import androidx.core.view.setPadding
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentContainerView
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
-import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.CustomTarget
-import com.bumptech.glide.request.transition.Transition
 import com.example.tourismapp.R
 import com.example.tourismapp.databinding.FragmentSavedRouteMapBinding
 import com.example.tourismapp.presentation.services.Polyline
-import com.example.tourismapp.presentation.utility.Auxiliary
-import com.example.tourismapp.presentation.utility.Constants
-import com.example.tourismapp.presentation.utility.MyLocation
-import com.example.tourismapp.presentation.utility.PhotoMarker
+import com.example.tourismapp.presentation.utility.*
+import com.example.tourismapp.presentation.utility.clustering.PhotoMarker
+import com.example.tourismapp.presentation.utility.clustering.PhotoRenderer
+import com.example.tourismapp.presentation.utility.location.MyLocation
 import com.example.tourismapp.presentation.utility.permissions.hasLocationPermission
 import com.example.tourismapp.presentation.view_models.MainViewModel
 import com.google.android.gms.maps.*
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.LatLngBounds
+import com.google.maps.android.clustering.Cluster
 import com.google.maps.android.clustering.ClusterManager
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
@@ -47,11 +39,11 @@ class SavedRouteMapFragment : Fragment() {
     val binding get() = _binding!!
     private var map: GoogleMap? = null
     private var myLocation = MyLocation(0.0, 0.0)
-    private lateinit var cameraUpdate: CameraUpdate
+    private lateinit var clusterManager: ClusterManager<PhotoMarker>
     private var routePath = mutableListOf<Polyline>()
+    private val photoMarkers = mutableListOf<PhotoMarker>()
 
     private val viewModel: MainViewModel by activityViewModels()
-//    private val clusterManager = ClusterManager<PhotoMarker>(context, map)
 
     private val callback = OnMapReadyCallback { googleMap ->
         map = googleMap
@@ -62,17 +54,35 @@ class SavedRouteMapFragment : Fragment() {
 
         //Move Camera to my location
         map!!.setOnMyLocationButtonClickListener {
-            val latLng = LatLng(myLocation.latitude, myLocation.longitude)
-            cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, Constants.CAMERA_ZOOM_VALUE)
-            map!!.animateCamera(cameraUpdate)
+            onMyLocationClick()
+            true
+        }
+        clusterManager = ClusterManager(requireContext(), map)
+
+        clusterManager.renderer = PhotoRenderer(
+            context = requireContext(),
+            map = map!!,
+            clusterManager
+        )
+
+        map!!.setOnCameraIdleListener(clusterManager)
+
+        clusterManager.setOnClusterItemClickListener { item ->
+            onMarkerClickListener(item.position)
             true
         }
 
-        map!!.setOnMarkerClickListener {
-            onMarkerClickListener(it.position)
-            true
+        clusterManager.setOnClusterClickListener {
+            onClusterClick(it)
         }
-//        map!!.setOnCameraIdleListener(clusterManager)
+
+        clusterManager.setOnClusterInfoWindowClickListener {
+            onClusterInfoWindowClick(it)
+        }
+
+        clusterManager.setOnClusterItemInfoWindowClickListener {
+            onClusterItemInfoWindowClick(it)
+        }
     }
 
 
@@ -87,13 +97,16 @@ class SavedRouteMapFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        val mapView = binding.mapView
+
         if (requireContext().hasLocationPermission()) {
             val mapFragment =
                 childFragmentManager.findFragmentById(R.id.mapView) as SupportMapFragment?
-            mapFragment?.getMapAsync(callback)
+            mapFragment?.getMapAsync(
+                callback
+            )
         }
-
-        val mapView = binding.mapView
 
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -106,33 +119,31 @@ class SavedRouteMapFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.getPhotosByRouteName(viewModel.routeName.value.toString())
-                    .collectLatest { photos ->
-                        if (photos.isNotEmpty()) {
-                            photos.forEach { photo ->
-                                val photoMarker = PhotoMarker(
-                                    lat = photo.latitude,
-                                    lng = photo.longitude,
-                                    pic_src = photo.pic_src,
-                                    description = photo.description.toString(),
-                                    routeName = photo.routeName
-                                )
-//                                clusterManager.addItem(photoMarker)
-                                attachPhotoToRoute(photoMarker)
-                            }
-                        }
+                val photos =
+                    viewModel.getPhotosByRouteName(viewModel.routeName.value.toString()).first()
+                if (photos.isNotEmpty()) {
+                    photos.forEach { photo ->
+                        val photoMarker = PhotoMarker(
+                            lat = photo.latitude,
+                            lng = photo.longitude,
+                            pic_src = photo.pic_src,
+                            description = photo.description.toString(),
+                            routeName = photo.routeName
+                        )
+                        photoMarkers.add(photoMarker)
                     }
+                    clusterManager.addItems(photoMarkers)
+                    clusterManager.cluster()
+                }
             }
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.routeName.collectLatest { name ->
-                    Log.d(TAG, "ROUTE: $name")
                     if (name != null) {
                         viewModel.getRouteInfoByName(name).collectLatest { routeInfo ->
                             routePath = routeInfo.route_path!!
-                            Log.d(TAG, "ROUTE PATH: $routePath")
                             Auxiliary.addAllPolylines(routePath = routePath, map = map!!)
                             Auxiliary.zoomToSeeWholeTrack(
                                 routePath = routePath,
@@ -146,37 +157,50 @@ class SavedRouteMapFragment : Fragment() {
         }
     }
 
-    private fun attachPhotoToRoute(photoMarker: PhotoMarker) {
-        val latLng = photoMarker.position
-        val markerOptions = MarkerOptions()
-            .position(latLng)
-            .title(photoMarker.title)
-            .snippet((photoMarker.snippet.ifEmpty { "" }).toString())
-        Glide.with(this)
-            .asBitmap()
-            .override(250, 250)
-            .load(Uri.parse(photoMarker.pic_src))
-            .circleCrop()
-            .into(object : CustomTarget<Bitmap>() {
-                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                    val view = ImageView(requireContext())
-                    view.setImageBitmap(resource)
-                    view.setPadding(2)
-                    view.setBackgroundResource(R.drawable.circle_border)
-                    val iconBitmap = Auxiliary.getMarkerBitmapFromView(view)
+    override fun onResume() {
+        super.onResume()
+        photoMarkers.clear()
+    }
 
-//                    val markerOptions = MarkerOptions()
-//                        .position(cluster.position)
-//                        .title("Cluster of ${cluster.size} markers")
-//                        .icon(BitmapDescriptorFactory.fromBitmap(getClusterIcon(cluster.size)))
-//                    map.addMarker(markerOptions)
+    override fun onPause() {
+        super.onPause()
+        map?.clear()
+    }
 
-                    markerOptions.icon(BitmapDescriptorFactory.fromBitmap(iconBitmap!!))
-                    map!!.addMarker(markerOptions)
-                }
+    private fun onClusterClick(cluster: Cluster<PhotoMarker?>): Boolean {
+        val builder = LatLngBounds.builder()
+        for (item in cluster.items) {
+            if (item != null) {
+                builder.include(item.position)
+            }
+        }
+        val bounds = builder.build()
+        try {
+            map!!
+                .animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100))
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return true
+    }
 
-                override fun onLoadCleared(placeholder: Drawable?) {}
-            })
+    private fun onClusterInfoWindowClick(cluster: Cluster<PhotoMarker?>?) {
+        // Does nothing, but you could go to a list of the users.
+    }
+
+    private fun onClusterItemClick(item: PhotoMarker?): Boolean {
+        // Does nothing, but you could go into the user's profile page, for example.
+        return false
+    }
+
+    private fun onClusterItemInfoWindowClick(item: PhotoMarker?) {
+        // Does nothing, but you could go into the user's profile page, for example.
+    }
+
+    private fun onMyLocationClick() {
+        val latLng = LatLng(myLocation.latitude, myLocation.longitude)
+        val cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, Constants.CAMERA_ZOOM_VALUE)
+        map!!.animateCamera(cameraUpdate)
     }
 
     private fun onMarkerClickListener(position: LatLng) {

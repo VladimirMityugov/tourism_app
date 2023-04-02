@@ -51,7 +51,7 @@ import com.example.tourismapp.presentation.utility.Constants.POLYLINE_WIDTH
 import com.example.tourismapp.presentation.utility.Constants.REQUIRED_FOREGROUND_PERMISSIONS
 import com.example.tourismapp.presentation.utility.Constants.REQUIRED_LOCATION_PERMISSIONS
 import com.example.tourismapp.presentation.utility.Constants.REQUIRED_NOTIFICATION_PERMISSIONS
-import com.example.tourismapp.presentation.utility.MyLocation
+import com.example.tourismapp.presentation.utility.location.MyLocation
 import com.example.tourismapp.presentation.utility.permissions.*
 import com.example.tourismapp.presentation.view_models.PermissionsViewModel
 import com.google.android.gms.maps.*

@@ -1,4 +1,4 @@
-package com.example.tourismapp.presentation.utility
+package com.example.tourismapp.presentation.utility.location
 
 data class MyLocation(
     var latitude: Double,

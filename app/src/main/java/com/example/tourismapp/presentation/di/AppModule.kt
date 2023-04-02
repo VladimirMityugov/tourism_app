@@ -10,7 +10,7 @@ import com.example.tourismapp.data.remote.PlacesApi
 import com.example.tourismapp.data.user_preferences.UserPreferences
 import com.example.tourismapp.data.user_preferences.UserPreferencesSerializer
 import com.example.tourismapp.presentation.utility.Constants.DATA_STORE_NAME
-import com.example.tourismapp.presentation.utility.DefaultLocationClient
+import com.example.tourismapp.presentation.utility.location.DefaultLocationClient
 import com.google.android.gms.location.LocationServices
 import dagger.Module
 import dagger.Provides

@@ -1,4 +1,4 @@
-package com.example.tourismapp.presentation.utility
+package com.example.tourismapp.data.local
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory

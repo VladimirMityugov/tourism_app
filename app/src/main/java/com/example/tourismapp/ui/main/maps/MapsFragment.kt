@@ -4,12 +4,9 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Intent
-import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.Drawable
 import android.location.Location
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -17,14 +14,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.appcompat.widget.AppCompatImageView
-import androidx.core.view.setPadding
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentContainerView
@@ -34,8 +29,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.CustomTarget
-import com.bumptech.glide.request.transition.Transition
 import com.example.tourismapp.databinding.FragmentMapsBinding
 import com.example.tourismapp.presentation.view_models.MainViewModel
 import com.example.tourismapp.presentation.utility.Constants.ACTION_START
@@ -62,6 +55,9 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.*
 import com.example.tourismapp.R
+import com.example.tourismapp.presentation.utility.clustering.PhotoMarker
+import com.example.tourismapp.presentation.utility.clustering.PhotoRenderer
+import com.google.maps.android.clustering.ClusterManager
 import kotlinx.coroutines.flow.first
 
 private const val TAG = "MAP_FRAGMENT"
@@ -81,6 +77,7 @@ class MapsFragment : Fragment() {
     private lateinit var mapView: FragmentContainerView
 
     private var map: GoogleMap? = null
+    private lateinit var clusterManager: ClusterManager<PhotoMarker>
     private var needAnimateCamera = true
     private var myLocation = MyLocation(0.0, 0.0)
 
@@ -88,6 +85,8 @@ class MapsFragment : Fragment() {
     private var routePath = mutableListOf<Polyline>()
 
     private val markers = mutableMapOf<String, String>()
+    private val photoMarkers = mutableListOf<PhotoMarker>()
+
     private val viewModel: MainViewModel by activityViewModels()
     private val permissionsViewModel: PermissionsViewModel by activityViewModels()
 
@@ -103,56 +102,59 @@ class MapsFragment : Fragment() {
             }
         }
 
-    private val onMapReadyCallback = OnMapReadyCallback {
-        map = it
+    private val onMapReadyCallback = OnMapReadyCallback {googleMap ->
+        map = googleMap
+
         Auxiliary.setMapStyle(map = map!!, context = requireContext())
         Auxiliary.setMapSettings(map = map!!)
-        map!!.clear()
+
         addAllPolylines()
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.getPhotosByRouteName(viewModel.routeName.value.toString())
-                    .collectLatest { photos ->
-                        if (photos.isNotEmpty()) {
-                            photos.forEach { photo ->
-                                val latLng = LatLng(photo.latitude, photo.longitude)
-                                attachPhotoToRoute(photo.pic_src, latLng)
-                            }
-                        }
-                    }
-            }
-        }
 
-        map!!.setOnMarkerClickListener { marker ->
-            val xid = markers[marker.id]
-            if (xid != null) {
-                viewModel.selectObject(xid)
-                viewLifecycleOwner.lifecycleScope.launch {
-                    repeatOnLifecycle(Lifecycle.State.STARTED) {
-                        viewModel.allObjects.collectLatest { allObjects ->
-                            viewModel.getObjectInfoById(xid, allObjects)
-                        }
-                        viewModel.isAddedToDb.collectLatest { isAdded ->
-                            viewModel.placesInfo.collectLatest { placeInfo ->
-                                viewModel.objectSelected.collectLatest { objectId ->
-                                    if (!isAdded) {
-                                        if (placeInfo != null && placeInfo.xid == objectId) {
-                                            viewModel.saveObjectsToDB(placeInfo)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+        clusterManager = ClusterManager(requireContext(), map)
 
-            val latLng = LatLng(marker.position.latitude, marker.position.longitude)
-            cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, CAMERA_ZOOM_VALUE)
-            map!!.animateCamera(cameraUpdate)
-            marker.showInfoWindow()
+        clusterManager.renderer = PhotoRenderer(
+            context = requireContext(),
+            map = map!!,
+            clusterManager
+        )
+
+        map!!.setOnCameraIdleListener(clusterManager)
+
+        clusterManager.setOnClusterItemClickListener { item ->
+            onClusterItemClick(item)
             true
         }
+
+//        map!!.setOnMarkerClickListener { marker ->
+//            val xid = markers[marker.id]
+//            if (xid != null) {
+//                viewModel.selectObject(xid)
+//                viewLifecycleOwner.lifecycleScope.launch {
+//                    repeatOnLifecycle(Lifecycle.State.STARTED) {
+//                        viewModel.allObjects.collectLatest { allObjects ->
+//                            viewModel.getObjectInfoById(xid, allObjects)
+//                        }
+//                        viewModel.isAddedToDb.collectLatest { isAdded ->
+//                            viewModel.placesInfo.collectLatest { placeInfo ->
+//                                viewModel.objectSelected.collectLatest { objectId ->
+//                                    if (!isAdded) {
+//                                        if (placeInfo != null && placeInfo.xid == objectId) {
+//                                            viewModel.saveObjectsToDB(placeInfo)
+//                                        }
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//
+//            val latLng = LatLng(marker.position.latitude, marker.position.longitude)
+//            cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, CAMERA_ZOOM_VALUE)
+//            map!!.animateCamera(cameraUpdate)
+//            marker.showInfoWindow()
+//            true
+//        }
 
 //        map!!.setInfoWindowAdapter(getInfoWindowAdapter())
 //        map!!.setOnInfoWindowLongClickListener {
@@ -200,7 +202,7 @@ class MapsFragment : Fragment() {
         viewModel.getAllRoutes()
 
         //Buttons
-        takePhotoButton.setOnClickListener {
+       takePhotoButton.setOnClickListener {
             findNavController().navigate(R.id.action_maps_to_photoFragment)
         }
 
@@ -310,6 +312,28 @@ class MapsFragment : Fragment() {
         }
 
 
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                val photos =
+                    viewModel.getPhotosByRouteName(viewModel.routeName.value.toString()).first()
+                if (photos.isNotEmpty()) {
+                    photos.forEach { photo ->
+                        val photoMarker = PhotoMarker(
+                            lat = photo.latitude,
+                            lng = photo.longitude,
+                            pic_src = photo.pic_src,
+                            description = photo.description.toString(),
+                            routeName = photo.routeName
+                        )
+                        photoMarkers.add(photoMarker)
+                    }
+                    clusterManager.addItems(photoMarkers)
+                    clusterManager.cluster()
+                }
+            }
+        }
+
+
         //Permissions handling
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -344,20 +368,6 @@ class MapsFragment : Fragment() {
                 }
             }
         }
-
-
-//        viewLifecycleOwner.lifecycleScope.launch {
-//            repeatOnLifecycle(Lifecycle.State.STARTED) {
-//                viewModel.getPhotosByRouteName(viewModel.routeName.value.toString())
-//                    .collectLatest { photos ->
-//                        if (photos.isNotEmpty()) {
-//                            photos.forEach {
-//                                addPhotoToRoute(it.latitude, it.longitude, it.pic_src)
-//                            }
-//                        }
-//                    }
-//            }
-//        }
     }
 
 
@@ -460,32 +470,34 @@ class MapsFragment : Fragment() {
             dialog.dismiss()
         }
 
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.objectSelected.collectLatest { objectId ->
-                viewModel.objectInfo.collectLatest { objectInfo ->
-                    if (objectInfo != null && objectInfo.xid == objectId) {
-                        Log.d(
-                            TAG,
-                            "ID: ${objectInfo.xid}, ID SELECTED: $objectId, NAME: ${objectInfo.name}"
-                        )
-                        Glide
-                            .with(placeImage.context)
-                            .load(objectInfo.image)
-                            .error(R.drawable.dot_icon)
-                            .fitCenter()
-                            .into(placeImage)
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED){
+                viewModel.objectSelected.collectLatest { objectId ->
+                    viewModel.objectInfo.collectLatest { objectInfo ->
+                        if (objectInfo != null && objectInfo.xid == objectId) {
+                            Log.d(
+                                TAG,
+                                "ID: ${objectInfo.xid}, ID SELECTED: $objectId, NAME: ${objectInfo.name}"
+                            )
+                            Glide
+                                .with(placeImage.context)
+                                .load(objectInfo.image)
+                                .error(R.drawable.dot_icon)
+                                .fitCenter()
+                                .into(placeImage)
 
 //                                markerTitle.text = objectInfo.name
-                        mainInfo.text = buildString {
-                            append("Address:")
-                            append("\n")
-                            append(objectInfo.road)
-                            append(",")
-                            append(objectInfo.house_number)
-                            append("\n")
-                            append(objectInfo.postcode)
+                            mainInfo.text = buildString {
+                                append("Address:")
+                                append("\n")
+                                append(objectInfo.road)
+                                append(",")
+                                append(objectInfo.house_number)
+                                append("\n")
+                                append(objectInfo.postcode)
+                            }
+                            additionalInfo.text = objectInfo.description
                         }
-                        additionalInfo.text = objectInfo.description
                     }
                 }
             }
@@ -535,28 +547,6 @@ class MapsFragment : Fragment() {
             map?.moveCamera(cameraUpdate)
             needAnimateCamera = false
         }
-    }
-
-    private fun attachPhotoToRoute(picSrc: String, latLng: LatLng) {
-        val markerOptions = MarkerOptions()
-            .position(latLng)
-        Glide.with(this)
-            .asBitmap()
-            .override(250, 250)
-            .load(Uri.parse(picSrc))
-            .circleCrop()
-            .into(object : CustomTarget<Bitmap>() {
-                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                    val view = ImageView(requireContext())
-                    view.setImageBitmap(resource)
-                    view.setPadding(2)
-                    view.setBackgroundResource(R.drawable.circle_border)
-                    val iconBitmap = Auxiliary.getMarkerBitmapFromView(view)
-                    markerOptions.icon(BitmapDescriptorFactory.fromBitmap(iconBitmap!!))
-                    map!!.addMarker(markerOptions)
-                }
-                override fun onLoadCleared(placeholder: Drawable?) {}
-            })
     }
 
     private fun getInfoWindowAdapter(): GoogleMap.InfoWindowAdapter {
@@ -649,6 +639,7 @@ class MapsFragment : Fragment() {
     }
 
     private fun saveRouteData() {
+        Log.d(TAG, "SAVE ROUTE DATA")
         stopRoute()
         val routePath = LocationService.routePath.value
         val routeDistance = Auxiliary.calculateRouteDistance(routePath)
@@ -674,8 +665,8 @@ class MapsFragment : Fragment() {
             viewLifecycleOwner.lifecycleScope.launch {
                 repeatOnLifecycle(Lifecycle.State.STARTED) {
                     viewModel.addRoutePicture(bmp!!, routeName!!)
-                    viewModel.selectRouteName(null)
                     viewModel.finishRoute(routeName)
+                    viewModel.selectRouteName(null)
                     routePath.clear()
                     map?.clear()
                 }
@@ -687,7 +678,10 @@ class MapsFragment : Fragment() {
 
     //buttonClicksHandlers
     private fun onSaveButtonClick(inputField: TextView, dialog: Dialog) {
-        if (requireContext().hasLocationPermission() && requireContext().hasNotificationPermission() && requireContext().hasForegroundServicePermission()) {
+        if (requireContext().hasLocationPermission()
+            && requireContext().hasNotificationPermission()
+            && requireContext().hasForegroundServicePermission()
+        ) {
             viewLifecycleOwner.lifecycleScope.launch {
                 repeatOnLifecycle(Lifecycle.State.STARTED) {
                     val routes = viewModel.getAllRoutes().first()
@@ -738,19 +732,10 @@ class MapsFragment : Fragment() {
 
     private fun onStopButtonClick() {
         if (LocationService.isOnRoute.value) {
-//            Auxiliary.zoomToSeeWholeTrack(
-//                routePath = LocationService.routePath.value,
-//                map = map!!,
-//                mapView = mapView
-//            )
             zoomToSeeWholeTrack()
             onMapReadyCallback.onMapReady(map!!).also {
                 saveRouteData()
             }
-//            viewLifecycleOwner.lifecycleScope.launch {
-//                delay(1000L)
-//            }
-
         }
     }
 
@@ -770,10 +755,25 @@ class MapsFragment : Fragment() {
         popupWindow.show(requireActivity().supportFragmentManager, "POP_UP")
     }
 
+    private fun onClusterItemClick(item: PhotoMarker): Boolean {
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                val photos =
+                    viewModel.getPhotosByRouteName(viewModel.routeName.value.toString()).first()
+                val selectedPhoto =
+                    photos.first { it.latitude == item.position.latitude && it.longitude == item.position.longitude }
+                viewModel.selectItem(selectedPhoto.pic_src)
+                findNavController().navigate(R.id.action_maps_to_singlePhotoFragment)
+            }
+        }
+        return false
+    }
+
 
     override fun onStop() {
         super.onStop()
         needAnimateCamera = false
+        map!!.clear()
     }
 
     override fun onDestroyView() {

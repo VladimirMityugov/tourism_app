@@ -7,6 +7,7 @@ class RouteDataMapper {
 
     fun toRouteDataModel(routeData: RouteData): RouteDataModel {
         return RouteDataModel(
+            id = routeData.id,
             route_name = routeData.route_name,
             route_description = routeData.route_description,
             route_distance = routeData.route_distance,
@@ -22,6 +23,7 @@ class RouteDataMapper {
 
     fun fromRouteDataModel(routeDataModel: RouteDataModel): RouteData {
         return RouteData(
+            id = routeDataModel.id,
             route_name = routeDataModel.route_name,
             route_description = routeDataModel.route_description,
             route_distance = routeDataModel.route_distance,

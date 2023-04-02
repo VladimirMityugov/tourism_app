@@ -25,6 +25,7 @@ import com.example.tourismapp.presentation.utility.location.DefaultLocationClien
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import okhttp3.Route
 import java.text.SimpleDateFormat
 import java.util.Locale
 import javax.inject.Inject
@@ -108,7 +109,7 @@ class MainViewModel @Inject constructor(
 
 
     //Photo
-    fun getRoutesList(): Flow<List<PhotoDataModel>> =
+    private fun getRoutesList(): Flow<List<PhotoDataModel>> =
         useCasePhotoLocal.getAllRoutesPhotosFromDb().map { it -> it.distinctBy { it.routeName } }
 
     fun getPhotosByRouteName(routeName: String): Flow<List<PhotoDataModel>> =
@@ -185,15 +186,12 @@ class MainViewModel @Inject constructor(
     fun getAllRoutes(): Flow<List<RouteDataModel>> = useCaseRouteLocal.getAllRoutes()
 
 
-    fun selectLastRouteName() {
+    fun selectLastRouteName(allRoutes: List<RouteDataModel>) {
         viewModelScope.launch {
-            useCaseRouteLocal.getAllRoutes().collectLatest { allRoutes ->
-                val ids = mutableListOf<Int>()
-                allRoutes.forEach { ids.add(it.id) }
-                val maxId = ids.max()
-                _routeName.value = allRoutes.find { it.id == maxId }?.route_name
-                Log.d(TAG, "ROUTE NAME : ${_routeName.value}")
-            }
+            val ids = mutableListOf<Int>()
+            allRoutes.forEach { ids.add(it.id) }
+            val maxId = ids.max()
+            _routeName.value = allRoutes.find { it.id == maxId }?.route_name
         }
     }
 
@@ -299,7 +297,8 @@ class MainViewModel @Inject constructor(
     }
 
     //Places
-    fun getPlacesKinds(): Flow<List<PlacesForSearchModel>> = useCasePlacesLocal.getPlacesKindsFromDb()
+    fun getPlacesKinds(): Flow<List<PlacesForSearchModel>> =
+        useCasePlacesLocal.getPlacesKindsFromDb()
 
     private fun insertPlacesKindsToDb(placeKind: String) {
         viewModelScope.launch {
@@ -329,7 +328,6 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             _kinds.value = emptyList()
             _kinds.value = placesKindsList
-            Log.d(TAG, "Updated list is ${_kinds.value}")
         }
     }
 
@@ -440,26 +438,25 @@ class MainViewModel @Inject constructor(
 
     fun saveAvatarUriToDataStore(uri: String) {
         viewModelScope.launch {
-         dataStore.updateData {
-             it.copy(
-                 user_avatar_uri = uri
-             )
-         }
+            dataStore.updateData {
+                it.copy(
+                    user_avatar_uri = uri
+                )
+            }
         }
     }
 
     fun saveNameToDataStore(name: String) {
         viewModelScope.launch {
-         dataStore.updateData {
-             it.copy(
-                 user_name = name
-             )
-         }
+            dataStore.updateData {
+                it.copy(
+                    user_name = name
+                )
+            }
         }
     }
 
     suspend fun getDataStore() = dataStore.data
-
 
 
     companion object {

@@ -4,7 +4,6 @@ package com.example.tourismapp.ui.main
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -28,9 +27,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-
-
-private const val TAG = "MAIN_ACTIVITY"
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -82,7 +78,6 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             if (viewModel.getDataStore().first().isFirstLaunch) {
-                Log.d(TAG, "Is first launch true")
                 val navOptions = NavOptions.Builder()
                     .setPopUpTo(R.id.fragment_profile, true)
                     .build()
@@ -161,7 +156,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun navigateToMapsIfNeeded(intent: Intent?) {
         if (intent?.action == Constants.ACTION_SHOW_MAPS_FRAGMENT) {
-            viewModel.selectLastRouteName()
+            lifecycleScope.launch {
+                val allRoutes = viewModel.getAllRoutes().first()
+                viewModel.selectLastRouteName(allRoutes)
+            }
             navController.navigate(R.id.action_global_mapsFragment)
         }
     }

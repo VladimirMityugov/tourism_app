@@ -68,7 +68,7 @@ class SavedRouteMapFragment : Fragment() {
         map!!.setOnCameraIdleListener(clusterManager)
 
         clusterManager.setOnClusterItemClickListener { item ->
-            onMarkerClickListener(item.position)
+            onClusterItemClick(item)
             true
         }
 
@@ -162,8 +162,8 @@ class SavedRouteMapFragment : Fragment() {
         photoMarkers.clear()
     }
 
-    override fun onPause() {
-        super.onPause()
+    override fun onStop() {
+        super.onStop()
         map?.clear()
     }
 
@@ -188,8 +188,17 @@ class SavedRouteMapFragment : Fragment() {
         // Does nothing, but you could go to a list of the users.
     }
 
-    private fun onClusterItemClick(item: PhotoMarker?): Boolean {
-        // Does nothing, but you could go into the user's profile page, for example.
+    private fun onClusterItemClick(item: PhotoMarker): Boolean {
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                val photos =
+                    viewModel.getPhotosByRouteName(viewModel.routeName.value.toString()).first()
+                val selectedPhoto =
+                    photos.first { it.latitude == item.position.latitude && it.longitude == item.position.longitude }
+                viewModel.selectItem(selectedPhoto.pic_src)
+                findNavController().navigate(R.id.action_savedRouteMapFragment_to_singlePhotoFragment)
+            }
+        }
         return false
     }
 

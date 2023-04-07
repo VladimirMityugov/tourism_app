@@ -10,7 +10,6 @@ import android.content.Intent
 import android.location.Location
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.drawable.IconCompat
@@ -25,13 +24,15 @@ import com.example.tourismapp.presentation.utility.Constants.LOCATION_NOTIFICATI
 import com.example.tourismapp.presentation.utility.Constants.LOCATION_SERVICE_CHANNEL_ID
 import com.example.tourismapp.presentation.utility.location.DefaultLocationClient
 import com.example.tourismapp.presentation.utility.location.LocationClient
+import com.example.tourismapp.presentation.utility.permissions.hasLocationPermission
+import com.example.tourismapp.presentation.utility.permissions.hasNotificationPermission
+import com.example.tourismapp.presentation.utility.permissions.hasServicePermission
 import com.example.tourismapp.ui.main.MainActivity
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-private const val TAG = "LOCATION_SERVICE"
 typealias Polyline = MutableList<LatLng>
 typealias Polylines = MutableList<Polyline>
 
@@ -117,21 +118,23 @@ class LocationService : Service() {
             .setContentIntent(getMainActivityPendingIntent())
 
         //Subscribe to location updates
-        locationClient.getLocationUpdates(INTERVAL_FOR_LOCATION_UPDATES)
-            .catch { e -> e.printStackTrace() }
-            .onEach { location ->
-                Log.d(TAG, "Location is ${location.latitude}, ${location.longitude}")
-                val latitude = location.latitude
-                val longitude = location.longitude
-                val updatedNotification =
-                    notification.setContentText("Location: Lat = $latitude, lon = $longitude")
-                notificationManager.notify(LOCATION_NOTIFICATION_ID, updatedNotification.build())
-                if (is_tracking.value) {
-                    addPathPoint(location)
-                    Log.d(TAG, "ROUTE IS : ${route_path.value}")
+        if(applicationContext.hasLocationPermission()
+            && applicationContext.hasNotificationPermission()
+            && applicationContext.hasServicePermission()){
+            locationClient.getLocationUpdates(INTERVAL_FOR_LOCATION_UPDATES)
+                .catch { e -> e.printStackTrace() }
+                .onEach { location ->
+                    val latitude = location.latitude
+                    val longitude = location.longitude
+                    val updatedNotification =
+                        notification.setContentText("Location: Lat = $latitude, lon = $longitude")
+                    notificationManager.notify(LOCATION_NOTIFICATION_ID, updatedNotification.build())
+                    if (is_tracking.value) {
+                        addPathPoint(location)
+                    }
                 }
-            }
-            .launchIn(serviceScope)
+                .launchIn(serviceScope)
+        }
 
         //Start service with notifications
         startForeground(LOCATION_NOTIFICATION_ID, notification.build())
@@ -149,7 +152,9 @@ class LocationService : Service() {
     private fun addEmptyPolyline() = route_path.value.add(mutableListOf())
     private fun addPathPoint(location: Location) {
         val pos = LatLng(location.latitude, location.longitude)
-        route_path.value.last().add(pos)
+        if(!route_path.value.last().contains(pos)){
+            route_path.value.last().add(pos)
+        }
     }
 
     @SuppressLint("UnspecifiedImmutableFlag")

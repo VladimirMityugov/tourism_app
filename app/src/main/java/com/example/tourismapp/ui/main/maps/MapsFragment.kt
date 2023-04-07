@@ -1,6 +1,6 @@
 package com.example.tourismapp.ui.main.maps
 
-import android.Manifest
+
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Intent
@@ -29,7 +29,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
-import com.example.tourismapp.databinding.FragmentMapsBinding
 import com.example.tourismapp.presentation.view_models.MainViewModel
 import com.example.tourismapp.presentation.utility.Constants.ACTION_START
 import com.example.tourismapp.presentation.utility.Constants.ACTION_STOP
@@ -41,7 +40,6 @@ import com.example.tourismapp.presentation.utility.Constants.CAMERA_ZOOM_VALUE
 import com.example.tourismapp.presentation.utility.Constants.INTERVAL_FOR_LOCATION_UPDATES
 import com.example.tourismapp.presentation.utility.Constants.POLYLINE_COLOR
 import com.example.tourismapp.presentation.utility.Constants.POLYLINE_WIDTH
-import com.example.tourismapp.presentation.utility.Constants.REQUIRED_FOREGROUND_PERMISSIONS
 import com.example.tourismapp.presentation.utility.Constants.REQUIRED_LOCATION_PERMISSIONS
 import com.example.tourismapp.presentation.utility.Constants.REQUIRED_NOTIFICATION_PERMISSIONS
 import com.example.tourismapp.presentation.utility.location.MyLocation
@@ -55,6 +53,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.*
 import com.example.tourismapp.R
+import com.example.tourismapp.databinding.FragmentMapsBinding
+import com.example.tourismapp.presentation.utility.Constants.REQUIRED_SERVICE_PERMISSIONS
 import com.example.tourismapp.presentation.utility.clustering.PhotoMarker
 import com.example.tourismapp.presentation.utility.clustering.PhotoRenderer
 import com.google.maps.android.clustering.ClusterManager
@@ -91,18 +91,18 @@ class MapsFragment : Fragment() {
     private val permissionsViewModel: PermissionsViewModel by activityViewModels()
 
     private val permissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-            it.keys.forEach { permission ->
-                permissionsViewModel.onPermissionResult(
-                    permission, it[permission] == true
-                )
-                if (it[permission] == true) {
-                    permissionsViewModel.dismissDialog(permission)
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+            permissions.entries.forEach { permission ->
+                if (!permission.value) {
+                    checkServicePermissions(permission.key)
                 }
+            }
+            if (permissions.values.all { it }) {
+                onStartButtonClick()
             }
         }
 
-    private val onMapReadyCallback = OnMapReadyCallback {googleMap ->
+    private val onMapReadyCallback = OnMapReadyCallback { googleMap ->
         map = googleMap
 
         Auxiliary.setMapStyle(map = map!!, context = requireContext())
@@ -186,6 +186,7 @@ class MapsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        checkLocationPermissions()
         mapView = binding.mapView
         if (requireContext().hasLocationPermission()) {
             val mapFragment =
@@ -202,7 +203,7 @@ class MapsFragment : Fragment() {
         viewModel.getAllRoutes()
 
         //Buttons
-       takePhotoButton.setOnClickListener {
+        takePhotoButton.setOnClickListener {
             findNavController().navigate(R.id.action_maps_to_photoFragment)
         }
 
@@ -261,55 +262,58 @@ class MapsFragment : Fragment() {
 
 
         //mapActivities
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.getCurrentLocation(INTERVAL_FOR_LOCATION_UPDATES)
-                    .collectLatest { location ->
+        if (requireContext().hasLocationPermission()) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel.getCurrentLocation(INTERVAL_FOR_LOCATION_UPDATES)
+                        .collectLatest { location ->
 
-                        //drawRoutePath
-                        drawLatestPolyline()
-                        myLocation = MyLocation(location.latitude, location.longitude)
+                            //drawRoutePath
+                            drawLatestPolyline()
+                            myLocation = MyLocation(location.latitude, location.longitude)
 
-                        //setPlacesMarkersOnMapIfRequired
-                        viewModel.getPlacesKinds().collectLatest { placeKindList ->
-                            val placesKinds = mutableListOf<String>()
-                            placeKindList.forEach {
-                                placesKinds.add(it.kind)
-                            }
-                            viewModel.updatePlacesKindsList(placesKinds)
-                            viewModel.hideAllPlaces.collectLatest { hideAll ->
-                                if (!hideAll) {
-                                    viewModel.getPlacesAround(
-                                        location.longitude,
-                                        location.latitude,
-                                        placesKinds,
-                                        null
-                                    )
-//                            showPlaces(location)
-                                } else {
-                                    hideAllPlaces(location)
+                            //setPlacesMarkersOnMapIfRequired
+                            viewModel.getPlacesKinds().collectLatest { placeKindList ->
+                                val placesKinds = mutableListOf<String>()
+                                placeKindList.forEach {
+                                    placesKinds.add(it.kind)
                                 }
-                                binding.hideShowButton.setOnClickListener {
-                                    if (hideAll) {
-                                        viewModel.hideAllPlaces(false)
+                                viewModel.updatePlacesKindsList(placesKinds)
+                                viewModel.hideAllPlaces.collectLatest { hideAll ->
+                                    if (!hideAll) {
                                         viewModel.getPlacesAround(
                                             location.longitude,
                                             location.latitude,
                                             placesKinds,
                                             null
                                         )
-//                                showPlaces(location)
-                                        viewModel.onPlacesKindsClick(INTERESTING_PLACES)
+//                            showPlaces(location)
                                     } else {
-                                        viewModel.hideAllPlaces(true)
                                         hideAllPlaces(location)
+                                    }
+                                    binding.hideShowButton.setOnClickListener {
+                                        if (hideAll) {
+                                            viewModel.hideAllPlaces(false)
+                                            viewModel.getPlacesAround(
+                                                location.longitude,
+                                                location.latitude,
+                                                placesKinds,
+                                                null
+                                            )
+//                                showPlaces(location)
+                                            viewModel.onPlacesKindsClick(INTERESTING_PLACES)
+                                        } else {
+                                            viewModel.hideAllPlaces(true)
+                                            hideAllPlaces(location)
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
+                }
             }
         }
+
 
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -334,40 +338,51 @@ class MapsFragment : Fragment() {
         }
 
 
-        //Permissions handling
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                permissionsViewModel.permissionsList.collectLatest {
-                    it
-                        .reversed()
-                        .forEach { permission ->
-                            providePermissionDialog(
-                                requireContext(),
-                                permissionDialogTextProvider = when (permission) {
-                                    Manifest.permission.FOREGROUND_SERVICE -> {
-                                        ForegroundServicePermission()
-                                    }
-                                    Manifest.permission.POST_NOTIFICATIONS -> {
-                                        PostNotificationPermission()
-                                    }
-                                    else -> {
-                                        return@forEach
-                                    }
-                                },
-                                isPermanentlyDeclined = !shouldShowRequestPermissionRationale(
-                                    permission
-                                ),
-                                onOkClick = {
-                                    permissionsViewModel.dismissDialog(permission)
-                                    permissionLauncher.launch(arrayOf(permission))
-                                },
-                                onDismissClick = { permissionsViewModel.dismissDialog(permission) },
-                                onGoToAppSettingsCLick = { requireActivity().openAppSettings() }
-                            )
-                        }
-                }
-            }
+    }
+
+    private fun checkLocationPermissions() {
+        if (!requireContext().hasLocationPermission()) {
+            Toast.makeText(
+                requireContext(),
+                "Please, grant location permission",
+                Toast.LENGTH_SHORT
+            ).show()
+            stopRoute()
+            requireActivity().onBackPressedDispatcher.onBackPressed()
         }
+    }
+
+    private fun checkServicePermissions(permission: String) {
+        providePermissionDialog(
+            requireContext(),
+            permissionDialogTextProvider = when (permission) {
+                android.Manifest.permission.FOREGROUND_SERVICE -> {
+                    ForegroundServicePermission()
+                }
+                android.Manifest.permission.POST_NOTIFICATIONS -> {
+                    PostNotificationPermission()
+                }
+                android.Manifest.permission.ACCESS_BACKGROUND_LOCATION -> {
+                    AccessBackgroundLocationPermission()
+                }
+                else -> {
+                    return
+                }
+            },
+            isPermanentlyDeclined = !shouldShowRequestPermissionRationale(
+                permission
+            ),
+            onOkClick = {
+                permissionsViewModel.dismissDialog(permission)
+                val requiredPermissions = mutableListOf<String>()
+                REQUIRED_LOCATION_PERMISSIONS.forEach { requiredPermissions.add(it) }
+                REQUIRED_SERVICE_PERMISSIONS.forEach { requiredPermissions.add(it) }
+                REQUIRED_NOTIFICATION_PERMISSIONS.forEach { requiredPermissions.add(it) }
+                permissionLauncher.launch(requiredPermissions.toTypedArray())
+            },
+            onDismissClick = { permissionsViewModel.dismissDialog(permission) },
+            onGoToAppSettingsCLick = { requireActivity().openAppSettings() }
+        )
     }
 
 
@@ -387,7 +402,12 @@ class MapsFragment : Fragment() {
 
         //Start route, save route info to DB
         saveButton.setOnClickListener {
-            onSaveButtonClick(inputField, dialog)
+            if (hasRoutePermission()
+            ) {
+                onSaveRouteNameClick(inputField, dialog)
+            } else {
+                dialog.dismiss()
+            }
         }
         dialog.setContentView(dialogView)
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
@@ -397,7 +417,15 @@ class MapsFragment : Fragment() {
 
     //locationServiceHandlers
     private fun startRoute() {
-        sendCommandToService(ACTION_START)
+        if (hasRoutePermission()) {
+            sendCommandToService(ACTION_START)
+        } else {
+            Toast.makeText(
+                requireContext(),
+                "Please, grant necessary permissions",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 
     private fun pauseRoute() {
@@ -471,7 +499,7 @@ class MapsFragment : Fragment() {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED){
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.objectSelected.collectLatest { objectId ->
                     viewModel.objectInfo.collectLatest { objectInfo ->
                         if (objectInfo != null && objectInfo.xid == objectId) {
@@ -677,56 +705,52 @@ class MapsFragment : Fragment() {
 
 
     //buttonClicksHandlers
-    private fun onSaveButtonClick(inputField: TextView, dialog: Dialog) {
-        if (requireContext().hasLocationPermission()
-            && requireContext().hasNotificationPermission()
-            && requireContext().hasForegroundServicePermission()
-        ) {
-            viewLifecycleOwner.lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    val routes = viewModel.getAllRoutes().first()
-                    val name = viewModel.routeName.value
-                    if (name == null) {
-                        val newRouteName = inputField.text
-                            .trim()
-                            .toString()
-                            .lowercase(Locale.ROOT)
-                            .replaceFirstChar {
-                                it.uppercaseChar()
-                            }
-                        val routeExists = routes.find { it.route_name == newRouteName }
+    private fun onSaveRouteNameClick(inputField: TextView, dialog: Dialog) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                val routes = viewModel.getAllRoutes().first()
+                val name = viewModel.routeName.value
+                if (name == null) {
+                    val newRouteName = inputField.text
+                        .trim()
+                        .toString()
+                        .lowercase(Locale.ROOT)
+                        .replaceFirstChar {
+                            it.uppercaseChar()
+                        }
+                    val routeExists = routes.find { it.route_name == newRouteName }
 
-                        if (newRouteName.isNotEmpty()) {
-                            if (routeExists == null) {
-                                viewModel.selectRouteName(newRouteName)
-                                viewModel.insertRoute(
-                                    routeName = newRouteName
-                                )
-                                startRoute()
-                                dialog.dismiss()
-                            } else {
-                                Toast.makeText(
-                                    requireContext(),
-                                    "Route with this name already exists",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
+                    if (newRouteName.isNotEmpty()) {
+                        if (routeExists == null) {
+                            viewModel.selectRouteName(newRouteName)
+                            viewModel.insertRoute(
+                                routeName = newRouteName
+                            )
+                            startRoute()
+                            dialog.dismiss()
                         } else {
                             Toast.makeText(
                                 requireContext(),
-                                "Route name could not be empty",
+                                "Route with this name already exists",
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
+                    } else {
+                        Toast.makeText(
+                            requireContext(),
+                            "Route name could not be empty",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
             }
-        } else {
-            permissionLauncher.launch(REQUIRED_LOCATION_PERMISSIONS)
-            permissionLauncher.launch(REQUIRED_FOREGROUND_PERMISSIONS)
-            permissionLauncher.launch(REQUIRED_NOTIFICATION_PERMISSIONS)
         }
+    }
 
+    private fun hasRoutePermission(): Boolean {
+        return (requireContext().hasLocationPermission()
+                && requireContext().hasNotificationPermission()
+                && requireContext().hasServicePermission())
     }
 
 
@@ -741,7 +765,18 @@ class MapsFragment : Fragment() {
 
     private fun onStartButtonClick() {
         when {
-            !routeIsStarted && viewModel.routeName.value == null -> createRouteNameAlertDialog()
+            !routeIsStarted && viewModel.routeName.value == null -> {
+                if (hasRoutePermission()
+                ) {
+                    createRouteNameAlertDialog()
+                } else {
+                    val requiredPermissions = mutableListOf<String>()
+                    REQUIRED_LOCATION_PERMISSIONS.forEach { requiredPermissions.add(it) }
+                    REQUIRED_SERVICE_PERMISSIONS.forEach { requiredPermissions.add(it) }
+                    REQUIRED_NOTIFICATION_PERMISSIONS.forEach { requiredPermissions.add(it) }
+                    permissionLauncher.launch(requiredPermissions.toTypedArray())
+                }
+            }
             !routeIsStarted && viewModel.routeName.value != null -> startRoute()
             routeIsStarted && viewModel.routeName.value != null -> pauseRoute()
         }

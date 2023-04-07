@@ -8,8 +8,6 @@ import android.provider.Settings
 import android.util.Log
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
-
-private const val TAG = "PERMISSIONS"
 fun providePermissionDialog(
     context: Context,
     permissionDialogTextProvider: PermissionDialogTextProvider,
@@ -18,20 +16,21 @@ fun providePermissionDialog(
     onDismissClick: () -> Unit,
     onGoToAppSettingsCLick: () -> Unit
 ) {
-Log.d(TAG, "SHOW DIALOG")
     MaterialAlertDialogBuilder(context)
         .setTitle("Permission dialog")
         .setMessage(permissionDialogTextProvider.getDialogText(isPermanentlyDeclined = isPermanentlyDeclined))
-        .setPositiveButton(if(isPermanentlyDeclined)"Grant permission" else "OK") { _, _ ->
+        .setPositiveButton(if(isPermanentlyDeclined)"Grant permission" else "OK") { dialog, _ ->
             if (isPermanentlyDeclined) {
+                dialog.dismiss()
                 onGoToAppSettingsCLick()
             } else {
+                dialog.dismiss()
                 onOkClick()
             }
         }
         .setNegativeButton("Cancel") { dialog, _ ->
-            onDismissClick()
             dialog.dismiss()
+            onDismissClick()
         }
         .create()
         .show()

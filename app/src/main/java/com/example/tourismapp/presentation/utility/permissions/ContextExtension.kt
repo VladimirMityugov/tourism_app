@@ -5,10 +5,10 @@ import android.content.pm.PackageManager
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.example.tourismapp.presentation.utility.Constants.REQUIRED_CAMERA_PERMISSIONS
-import com.example.tourismapp.presentation.utility.Constants.REQUIRED_FOREGROUND_PERMISSIONS
 import com.example.tourismapp.presentation.utility.Constants.REQUIRED_LOCATION_PERMISSIONS
 import com.example.tourismapp.presentation.utility.Constants.REQUIRED_NOTIFICATION_PERMISSIONS
 import com.example.tourismapp.presentation.utility.Constants.REQUIRED_READ_PERMISSIONS
+import com.example.tourismapp.presentation.utility.Constants.REQUIRED_SERVICE_PERMISSIONS
 import com.example.tourismapp.presentation.utility.Constants.REQUIRED_WRITE_PERMISSIONS
 
 private const val TAG = "LOCATION_PERMISSION"
@@ -50,8 +50,8 @@ fun Context.hasNotificationPermission(): Boolean {
     }
 }
 
-fun Context.hasForegroundServicePermission(): Boolean {
-    return REQUIRED_FOREGROUND_PERMISSIONS.all { permission ->
+fun Context.hasServicePermission(): Boolean {
+    return REQUIRED_SERVICE_PERMISSIONS.all { permission ->
         ContextCompat.checkSelfPermission(
             this,
             permission

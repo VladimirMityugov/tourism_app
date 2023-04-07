@@ -145,15 +145,15 @@ class RouteFragment : Fragment() {
                                 routeDuration.visibility = View.VISIBLE
                                 routeDistance.visibility - View.VISIBLE
                                 routeAvgSpeed.text = buildString {
-                                    append("Average speed (km/h): ")
+                                    append("Avg speed (km/h): ")
                                     append(routeInfo.route_average_speed)
                                 }
                                 routeDuration.text = buildString {
-                                    append("Route duration (minutes): ")
+                                    append("Duration (minutes): ")
                                     append(round((routeInfo.route_time!! / 1000F / 60) * 100) / 100)
                                 }
                                 routeDistance.text = buildString {
-                                    append("Route distance (meters): ")
+                                    append("Distance (meters): ")
                                     append(routeInfo.route_distance!!.toInt())
                                 }
                                 Glide

@@ -24,9 +24,11 @@ import com.example.tourismapp.presentation.utility.permissions.hasLocationPermis
 import com.example.tourismapp.presentation.utility.permissions.*
 import com.example.tourismapp.presentation.view_models.PermissionsViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+
+
+private const val TAG = "MAIN_ACTIVITY"
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -40,14 +42,14 @@ class MainActivity : AppCompatActivity() {
 
 
     private val permissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-            it.keys.forEach { permission ->
-                permissionViewModel.onPermissionResult(
-                    permission, it[permission] == true
-                )
-                if(it[permission] == true){
-                    permissionViewModel.dismissDialog(permission)
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {permissions ->
+            permissions.entries.forEach { permission ->
+                if (!permission.value) {
+                    checkPermissions(permission.key)
                 }
+            }
+            if (permissions.values.all { it }) {
+                navController.navigate(R.id.action_global_mapsFragment)
             }
         }
 
@@ -102,39 +104,6 @@ class MainActivity : AppCompatActivity() {
         }
 
 
-        lifecycleScope.launch {
-            permissionViewModel.permissionsList.collectLatest {
-                it
-                    .reversed()
-                    .forEach { permission ->
-                        providePermissionDialog(
-                            this@MainActivity,
-                            permissionDialogTextProvider = when (permission) {
-                                android.Manifest.permission.ACCESS_COARSE_LOCATION -> {
-                                    AccessCoarseLocationPermission()
-                                }
-                                android.Manifest.permission.ACCESS_FINE_LOCATION -> {
-                                    AccessFineLocationPermission()
-                                }
-                                android.Manifest.permission.ACCESS_BACKGROUND_LOCATION -> {
-                                    AccessBackgroundLocationPermission()
-                                }
-                                else -> {
-                                    return@forEach
-                                }
-                            },
-                            isPermanentlyDeclined = !shouldShowRequestPermissionRationale(permission),
-                            onOkClick = {
-                                permissionViewModel.dismissDialog(permission)
-                                permissionLauncher.launch(arrayOf(permission))
-                            },
-                            onDismissClick = { permissionViewModel.dismissDialog(permission) },
-                            onGoToAppSettingsCLick = { this@MainActivity.openAppSettings() }
-                        )
-                    }
-            }
-        }
-
         //Navigation buttons click handler
         navigationView.setOnItemSelectedListener {
             when (it.itemId) {
@@ -146,6 +115,33 @@ class MainActivity : AppCompatActivity() {
 
         //Navigate to maps fragment by click on location notification
         navigateToMapsIfNeeded(intent)
+    }
+
+
+    private fun checkPermissions(permission: String) {
+        providePermissionDialog(
+            this@MainActivity,
+            permissionDialogTextProvider = when (permission) {
+                android.Manifest.permission.ACCESS_COARSE_LOCATION -> {
+                    AccessCoarseLocationPermission()
+                }
+                android.Manifest.permission.ACCESS_FINE_LOCATION -> {
+                    AccessFineLocationPermission()
+                }
+                else -> {
+                    return
+                }
+            },
+            isPermanentlyDeclined = !shouldShowRequestPermissionRationale(
+                permission
+            ),
+            onOkClick = {
+                permissionViewModel.dismissDialog(permission)
+                permissionLauncher.launch(REQUIRED_LOCATION_PERMISSIONS)
+            },
+            onDismissClick = { permissionViewModel.dismissDialog(permission) },
+            onGoToAppSettingsCLick = { this@MainActivity.openAppSettings() }
+        )
     }
 
     override fun onNewIntent(intent: Intent?) {

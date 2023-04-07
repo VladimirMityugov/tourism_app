@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
@@ -51,7 +52,7 @@ class ProfileFragment : Fragment() {
                 permissionsViewModel.onPermissionResult(
                     permission, it[permission] == true
                 )
-                if(it[permission] == true){
+                if (it[permission] == true) {
                     permissionsViewModel.dismissDialog(permission)
                 }
             }
@@ -181,6 +182,7 @@ class ProfileFragment : Fragment() {
 
     private fun onApplyChangesClick(name: String) {
         viewModel.saveNameToDataStore(name)
+        Toast.makeText(requireContext(), "Changes are applied", Toast.LENGTH_SHORT).show()
     }
 
 

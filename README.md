@@ -18,8 +18,8 @@ Auth, Crashlytics.**
 </div>
 
 <div style="display:flex;flex-wrap:wrap;">
-<img src="https://user-images.githubusercontent.com/118269028/216836609-4057e575-52b2-4edb-8e18-530401779cc0.jpg" width=30% height=30%>
-<img src="https://user-images.githubusercontent.com/118269028/227333098-9b917e3b-c8e6-444b-ad64-8e5eb6d75fc6.jpg" width=30% height=30%>
-<img src="https://user-images.githubusercontent.com/118269028/224482070-35bb8bcd-4005-4c4b-9507-223223878f59.jpg" width=30% height=30%>
+<img src="https://user-images.githubusercontent.com/118269028/229377961-3f91ceff-f1e9-4c89-87cf-8057bb57b4e9.png" width=30% height=30%>
+<img src="https://user-images.githubusercontent.com/118269028/229377970-a097ffda-65f9-4d94-b14d-27ba151da64b.png" width=30% height=30%>
+<img src="https://user-images.githubusercontent.com/118269028/229377975-c9dce6ad-0d6d-440e-90a9-07224f223057.png" width=30% height=30%>
 </div>
 
